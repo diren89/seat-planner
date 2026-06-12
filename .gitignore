@@ -30,3 +30,6 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+
+# Claude Code local settings (Berechtigungen, nicht teilen)
+.claude/settings.local.json
