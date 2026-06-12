@@ -1,0 +1,231 @@
+{
+  "project": {
+    "name": "Sitzplatz-Planungsassistent",
+    "subtitle": "JobRad – 2. Obergeschoss",
+    "type": "Standalone Web-App (Vanilla HTML/CSS/JS)",
+    "created": "2025-06-12",
+    "author": "JobRad GmbH – OpenCode AI-Assisted Development",
+    "entrypoint": "seat-planner/index.html",
+    "no_build_required": true,
+    "description": "Interaktiver Planungsassistent zur Sitzplatzvergabe für Entwicklungsteams. Ermöglicht Einzelplatz-Auswahl, Raster-Generierung, Team-Zuweisung, Auslastungsanalyse und Bedarfssteuerung auf dem realen JobRad-Gebäudeplan (2. OG)."
+  },
+
+  "requirements": {
+    "original_request": "Interaktiver Planungsassistent zur Sitzplatzvergabe für Entwicklungsteams. Einzelplätze auswählen, gruppieren, Teams zuweisen, Auslastung verwalten, Bedarfssteuerung.",
+    "tech_stack": "Eigenständige HTML/JS-App (kein Build-Schritt)",
+    "seat_placement": "Raster automatisch generieren",
+    "data_persistence": "Lokal im Browser (localStorage) + Export/Import als JSON",
+    "features_selected": [
+      "Team-Kapazität & Bedarf (Soll/Ist-Abgleich)",
+      "Desk-Sharing / Flex-Plätze (Sharing-Faktor)",
+      "Platz-Status (frei / belegt / reserviert / blockiert)",
+      "Filter & Hervorhebung (nach Team, nach Status, Suche)"
+    ]
+  },
+
+  "file_structure": {
+    "root": "seat-planner/",
+    "files": [
+      {
+        "path": "js/seed-jobrad2og.js",
+        "role": "Default-Karte (JobRad 2. OG)",
+        "description": "Globale Konstante JOBRAD_2OG_STATE: 82 Arbeitsplätze, die per Bilderkennung aus floorplan/JobRad-2OG.jpg extrahiert wurden (Tile-Mittelpunkte in Bildkoordinaten 1139×1349). Jeder Desk trägt seine Plan-Nummer (label 2-02 … 2-94) und eine Raumzuordnung (room: TS1 … TS10, Hinterrad 2, oder leer). Status durchgängig 'free', type 'fixed'. Wird in app.js als Default geladen, wenn localStorage leer ist. Hinterrad 2 (2-73..2-76): Nummern im Plan nicht gedruckt, aus der Nummernlücke abgeleitet.",
+        "lines": 100,
+        "public_api": ["JOBRAD_2OG_STATE"]
+      },
+      {
+        "path": "index.html",
+        "role": "App-Shell",
+        "description": "Gesamtes HTML-Gerüst: Header mit Zoom/Undo-Buttons, Plan-Viewport mit Floorplan-Bild und Seat-Layer, Plan-Toolbar, Sidebar mit 4 Tabs (Raster / Teams / Statistik / Daten), 3 Modals (Platz-Bearbeitung, Team-Bearbeitung, Bestätigung), Toast-Container. Script-Ladereihenfolge: storage → teams → seats → stats → app.",
+        "lines": 244
+      },
+      {
+        "path": "css/style.css",
+        "role": "Styling",
+        "description": "CSS Custom Properties (Farb-System, Seat-Status-Farben, Layout-Konstanten). Layout: Fixed Header, Flex-Body (Plan + Sidebar). Seat-Styles: Status-Varianten via data-Attribut, Flex-Badge (lila Kreis '·F'), Lasso-Stil, Hover/Selected/Dimmed/Highlighted/Jump-Target States. Responsive Sidebar-Tabs, Formular-Grid, Team-List, Stats-Cards, Modal-System, Toast-Animationen.",
+        "lines": 638,
+        "css_variables": {
+          "colors": ["--bg", "--surface", "--surface2", "--border", "--border-dark", "--text", "--text-muted", "--primary", "--primary-h", "--danger", "--danger-h", "--warn", "--success"],
+          "seat_status_colors": {
+            "free": "#22c55e",
+            "occupied": "#ef4444",
+            "reserved": "#f59e0b",
+            "blocked": "#6b7280"
+          },
+          "layout": {
+            "--seat-size": "34px",
+            "--sidebar-w": "300px",
+            "--header-h": "48px",
+            "--toolbar-h": "44px"
+          }
+        }
+      },
+      {
+        "path": "js/storage.js",
+        "role": "Datenpersistenz",
+        "description": "IIFE-Modul. localStorage-Key: 'seatplanner_v1'. Methoden: save(state), load() → state|null, clear(), exportJSON(state) → Download als sitzplan_{timestamp}.json, importJSON(file) → Promise<state>.",
+        "lines": 66,
+        "public_api": ["save", "load", "clear", "exportJSON", "importJSON"]
+      },
+      {
+        "path": "js/teams.js",
+        "role": "Team-Verwaltung",
+        "description": "IIFE-Modul. Dependency Injection via init(getState, setState, onChange). Team-Datenmodell: { id, name, color, demand }. CRUD: addTeam, updateTeam, deleteTeam (entfernt auch alle Seat-Zuweisungen), getTeam, getAll. assignSeats(seatIds, teamId|null) weist Plätze zu/hebt auf. renderList() baut Team-Liste (inkl. Ist/Soll-Anzeige). renderAssignSelect() füllt beide Selects (Zuweisung + Filter). Modal-Helpers: openEditModal(id), saveEditModal().",
+        "lines": 157,
+        "data_model": {
+          "team": {
+            "id": "string (T + random base36)",
+            "name": "string",
+            "color": "hex color string",
+            "demand": "number (benötigte Plätze, 0 = kein Ziel)"
+          }
+        },
+        "public_api": ["init", "addTeam", "updateTeam", "deleteTeam", "getTeam", "getAll", "assignSeats", "renderList", "renderAssignSelect", "openEditModal", "saveEditModal"]
+      },
+      {
+        "path": "js/seats.js",
+        "role": "Sitzplatz-Logik & Rendering",
+        "description": "IIFE-Modul. Dependency Injection via init(getState, setState, onChange). Seat-Datenmodell: { id, x, y, label, teamId|null, status, type, shareFactor }. Raster-Generierung: generateGrid(cols, rows, gapX, gapY, offsetX, offsetY, prefix, startNum). DOM-Rendering: inkrementell via _seatEls Map (id→Element), team-Farb-Override für freie Plätze, Border-Farbe immer Team-Farbe. Drag & Drop: _drag-Objekt mit origPositions, zoom-kompensiert, Gruppen-Drag. Lasso-Auswahl: mousedown auf Stage → Rechteck, onUp sammelt Seats im Rechteck. Modals: openSeatModal(id)/saveSeatModal(). Filter: setFilter(teamId, status) → dimmed/highlighted CSS-Klassen. Jump: jumpToSeat(query, getZoom, setPan) → Viewport-Zentrierung + jump-flash Animation.",
+        "lines": 445,
+        "data_model": {
+          "seat": {
+            "id": "string (S + random base36)",
+            "x": "number (px, Pixel auf dem 1139×1349 Plan-Bild)",
+            "y": "number (px)",
+            "label": "string (z.B. 'A1', 'S3')",
+            "teamId": "string|null",
+            "status": "'free'|'occupied'|'reserved'|'blocked'",
+            "type": "'fixed'|'flex'",
+            "shareFactor": "number (1.0 für fest; z.B. 1.5 für Flex)"
+          }
+        },
+        "public_api": ["init", "addSeat", "updateSeat", "deleteSeats", "getAll", "generateGrid", "select", "selectMany", "clearSelection", "getSelectedIds", "setFilter", "clearFilter", "render", "renderDetailPanel", "initDragHandlers", "initLasso", "openSeatModal", "saveSeatModal", "jumpToSeat"]
+      },
+      {
+        "path": "js/stats.js",
+        "role": "Auslastungsberechnung & Statistik-Rendering",
+        "description": "IIFE-Modul. init(getState). compute() → { total, occupied, free, reserved, blocked, usable, utilPct, teamStats[] }. Auslastung = occupied / (total - blocked) × 100. Pro Team: effectiveCapacity (flex × shareFactor), Soll/Ist-Vergleich → coverage: 'ok'|'over'|'under'|'unset'. render() schreibt in DOM-IDs und baut Team-Cards mit Ampel-Badge.",
+        "lines": 144,
+        "coverage_logic": {
+          "ok": "tEffective >= demand",
+          "over": "tEffective > demand",
+          "under": "tEffective < demand",
+          "unset": "demand === 0"
+        },
+        "public_api": ["init", "compute", "render"]
+      },
+      {
+        "path": "js/app.js",
+        "role": "Haupt-Controller",
+        "description": "IIFE (kein globales Namespace-Leak). State-Management: _state-Objekt, setState(next, skipUndo) schreibt in localStorage + ruft refresh(). Undo-Stack (max 30 Einträge, JSON-serialisiert). Zoom/Pan: CSS transform auf #plan-stage, Zoom-Range 0.2–3.0, Zoom-Step 0.15, Mausrad-Zoom zum Cursor, Mittelklick/Space+Drag Pan. Keyboard: Space=Pan, Strg+Z=Undo, +/-=Zoom, 0=Reset, Del/Backspace=Löschen, Esc=Deselect, Strg+A=Alle auswählen. Tabs, Modals, Toolbar, Raster-Tab, Teams-Tab, Stats-Tab, Daten-Tab je in eigener init*-Funktion. Boot: Storage.load() → Module init → Lasso+Drag init → UI init → applyTransform + refresh.",
+        "lines": 515,
+        "constants": {
+          "UNDO_LIMIT": 30,
+          "ZOOM_MIN": 0.2,
+          "ZOOM_MAX": 3.0,
+          "ZOOM_STEP": 0.15
+        }
+      },
+      {
+        "path": "floorplan/JobRad-2OG.jpg",
+        "role": "Gebäudeplan",
+        "description": "Original-Grundriss JobRad 2. Obergeschoss. Kopiert aus 'JobRad Floorplan 2OGJCN/JobRad-2OG.jpg'.",
+        "dimensions": "1139 × 1349 px",
+        "format": "JPEG"
+      }
+    ]
+  },
+
+  "state_model": {
+    "description": "Das gesamte App-State-Objekt, das in localStorage unter 'seatplanner_v1' gespeichert wird.",
+    "schema": {
+      "seats": "Seat[]",
+      "teams": "Team[]",
+      "view": {
+        "zoom": "number",
+        "panX": "number",
+        "panY": "number"
+      }
+    },
+    "seat_schema": {
+      "id": "string",
+      "x": "number",
+      "y": "number",
+      "label": "string",
+      "teamId": "string|null",
+      "status": "'free'|'occupied'|'reserved'|'blocked'",
+      "type": "'fixed'|'flex'",
+      "shareFactor": "number",
+      "room": "string (räumliche Zone, z.B. 'TS1'; '' = keine)"
+    },
+    "team_schema": {
+      "id": "string",
+      "name": "string",
+      "color": "string (hex)",
+      "demand": "number"
+    }
+  },
+
+  "module_communication": {
+    "pattern": "Dependency Injection + Change-Callback",
+    "description": "app.js hält den einzigen State. Seats und Teams erhalten getState/setState/onChange via init(). Jeder setState-Aufruf triggert onChange → app.refresh() → alle Module re-rendern aus dem neuen State. Stats erhält nur getState (read-only).",
+    "flow": "User Action → Seats/Teams mutiert State via setState → app.setState → Storage.save + refresh() → alle render()-Aufrufe"
+  },
+
+  "keyboard_shortcuts": {
+    "+": "Zoom in",
+    "-": "Zoom out",
+    "0": "Zoom & Pan zurücksetzen",
+    "Strg+Z": "Rückgängig (bis 30 Schritte)",
+    "Strg+A": "Alle Plätze auswählen",
+    "Delete/Backspace": "Ausgewählte Plätze löschen (mit Bestätigung)",
+    "Escape": "Auswahl aufheben",
+    "Leertaste + Drag": "Pan",
+    "Mausrad": "Zoom zum Cursor",
+    "Mittelklick + Drag": "Pan"
+  },
+
+  "seat_interactions": {
+    "Klick": "Platz auswählen (ersetzt Auswahl)",
+    "Strg/Cmd + Klick": "Platz zur Auswahl hinzufügen / entfernen",
+    "Shift + Klick": "wie Strg+Klick",
+    "Doppelklick": "Platz-Edit-Modal öffnen",
+    "Rechtsklick": "Platz-Edit-Modal öffnen",
+    "Drag (auf Platz)": "Platz(e) verschieben – zoom-kompensiert",
+    "Drag (auf leerer Fläche)": "Lasso-Auswahl (Rechteck)"
+  },
+
+  "known_limitations": [
+    "Keine automatische Erkennung von Raumgrenzen – Plätze werden manuell auf dem Plan positioniert",
+    "Kein Backend – alle Daten liegen lokal im Browser; für Team-Sharing ist JSON-Export/-Import nötig",
+    "Drag während Zoom-Wechsel kann minimal ungenau sein (clientX/Y wird gegen Zoom normiert)",
+    "localStorage hat Browser-typische Größenbeschränkung (~5 MB); bei sehr vielen Plätzen ggf. Export nutzen",
+    "Kein Touch/Mobile-Support (reine Desktop-App)"
+  ],
+
+  "extension_ideas": [
+    "Personen-Zuweisung auf Einzelplätze (Name/E-Mail pro Platz)",
+    "Raum-/Zonen-Ebene (Named Areas über dem Plan)",
+    "Mehrere Etagen / Tabs",
+    "Buchungssystem (Tagesbuchung für Flex-Plätze)",
+    "Backend-Anbindung (z.B. REST-API + PostgreSQL)",
+    "SVG-Overlay statt JPEG für schärferes Rendering bei hohem Zoom",
+    "Druckansicht / PDF-Export",
+    "Dark Mode (CSS-Custom-Properties sind bereits strukturiert für einfaches Theming)"
+  ],
+
+  "dependencies": {
+    "runtime": "keine (Vanilla JS/HTML/CSS)",
+    "build_tools": "keine",
+    "browser_compatibility": "Alle modernen Browser (Chrome, Firefox, Safari, Edge) – kein IE"
+  },
+
+  "floorplan": {
+    "building": "JobRad GmbH",
+    "floor": "2. Obergeschoss",
+    "original_file": "JobRad Floorplan 2OGJCN/JobRad-2OG.jpg",
+    "copy_in_project": "seat-planner/floorplan/JobRad-2OG.jpg",
+    "dimensions_px": "1139 × 1349",
+    "note": "Das Bild ist nur für Desktop-Bildschirme optimiert. Bei Zoom < 0.5 oder auf kleinen Monitoren ggf. Offset-Werte im Raster anpassen."
+  }
+}

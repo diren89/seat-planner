@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sitzplatz-Planungsassistent &ndash; JobRad 2. OG</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════ HEADER -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="header-logo">JobRad</span>
+      <span class="header-title">Sitzplatz-Planungsassistent &mdash; 2. OG</span>
+    </div>
+    <div class="header-right">
+      <button id="btn-undo" class="btn btn-icon" title="Rückgängig (Strg+Z)">&#8630;</button>
+      <button id="btn-zoom-in"  class="btn btn-icon" title="Reinzoomen (+)">+</button>
+      <button id="btn-zoom-out" class="btn btn-icon" title="Rauszoomen (-)">&#8722;</button>
+      <button id="btn-zoom-reset" class="btn btn-icon" title="Zoom zurücksetzen (0)">&#8635;</button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════ MAIN -->
+  <div class="app-body">
+
+    <!-- ── FLOOR PLAN CANVAS ───────────────────────────────────── -->
+    <main class="plan-wrapper" id="plan-wrapper">
+      <div class="plan-viewport" id="plan-viewport">
+        <div class="plan-stage" id="plan-stage">
+          <img src="floorplan/JobRad-2OG.jpg" alt="Gebäudeplan 2. OG" id="floorplan-img" draggable="false" />
+          <div class="lasso" id="lasso"></div>
+        </div>
+      </div>
+
+      <div class="plan-toolbar">
+        <span class="toolbar-hint" id="toolbar-hint">Klick = auswählen &nbsp;|&nbsp; Strg+Klick = Mehrfachauswahl &nbsp;|&nbsp; Ziehen auf freier Fläche = Lasso &nbsp;|&nbsp; Doppelklick = bearbeiten</span>
+        <div class="toolbar-actions">
+          <button id="btn-add-seat" class="btn btn-sm">+ Einzelplatz</button>
+          <button id="btn-delete-selected" class="btn btn-sm btn-danger" disabled>Auswahl löschen</button>
+          <button id="btn-clear-assign" class="btn btn-sm" disabled>Zuweisung aufheben</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ── SIDEBAR ─────────────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="tab-raster">Raster</button>
+        <button class="tab-btn" data-tab="tab-teams">Teams</button>
+        <button class="tab-btn" data-tab="tab-stats">Statistik</button>
+        <button class="tab-btn" data-tab="tab-data">Daten</button>
+      </nav>
+
+      <!-- ── TAB: RASTER ──────────────────────────── -->
+      <section class="tab-panel active" id="tab-raster">
+        <h3>Raster generieren</h3>
+        <div class="form-grid">
+          <label>Spalten<input type="number" id="grid-cols" value="8" min="1" max="30" /></label>
+          <label>Reihen<input type="number" id="grid-rows" value="5" min="1" max="30" /></label>
+          <label>Abstand X (px)<input type="number" id="grid-gap-x" value="52" min="30" max="200" /></label>
+          <label>Abstand Y (px)<input type="number" id="grid-gap-y" value="52" min="30" max="200" /></label>
+          <label>Offset X (px)<input type="number" id="grid-offset-x" value="60" min="0" max="2000" /></label>
+          <label>Offset Y (px)<input type="number" id="grid-offset-y" value="60" min="0" max="2000" /></label>
+          <label>Präfix<input type="text" id="grid-prefix" value="A" maxlength="4" /></label>
+          <label>Start-Nr.<input type="number" id="grid-start-num" value="1" min="1" /></label>
+        </div>
+        <button id="btn-generate-grid" class="btn btn-primary btn-block">Raster erzeugen</button>
+        <p class="hint">Neue Plätze werden zu bestehenden ergänzt.</p>
+
+        <hr />
+
+        <h3>Ausgewählte Plätze</h3>
+        <div id="seat-detail" class="seat-detail">
+          <p class="muted">Kein Platz ausgewählt.</p>
+        </div>
+      </section>
+
+      <!-- ── TAB: TEAMS ───────────────────────────── -->
+      <section class="tab-panel" id="tab-teams">
+        <h3>Teams verwalten</h3>
+        <div class="form-inline-col">
+          <div class="form-row">
+            <input type="text" id="team-name-input" placeholder="Teamname" maxlength="40" />
+            <input type="color" id="team-color-input" value="#4f86c6" title="Teamfarbe" />
+          </div>
+          <input type="number" id="team-demand-input" placeholder="Bedarf (Anzahl Plätze)" min="0" />
+          <button id="btn-add-team" class="btn btn-primary btn-block">Team hinzufügen</button>
+        </div>
+
+        <ul class="team-list" id="team-list"></ul>
+
+        <div class="assign-actions" id="assign-actions" style="display:none;">
+          <hr />
+          <p class="hint"><strong id="assign-count">0</strong> Platz/Plätze ausgewählt &ndash; Team zuweisen:</p>
+          <select id="assign-team-select">
+            <option value="">-- Team wählen --</option>
+          </select>
+          <button id="btn-assign-team" class="btn btn-primary btn-block">Zuweisen</button>
+        </div>
+      </section>
+
+      <!-- ── TAB: STATISTIK ───────────────────────── -->
+      <section class="tab-panel" id="tab-stats">
+        <h3>Auslastung &amp; Bedarf</h3>
+
+        <div class="stats-card">
+          <div class="stats-card-title">Gesamt</div>
+          <div class="stats-row"><span>Plätze gesamt</span><strong id="stat-total-seats">0</strong></div>
+          <div class="stats-row"><span>Belegt</span><strong id="stat-occupied">0</strong></div>
+          <div class="stats-row"><span>Frei</span><strong id="stat-free">0</strong></div>
+          <div class="stats-row"><span>Reserviert</span><strong id="stat-reserved">0</strong></div>
+          <div class="stats-row"><span>Blockiert</span><strong id="stat-blocked">0</strong></div>
+          <div class="stats-row"><span>Auslastung</span><strong id="stat-utilization">0 %</strong></div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="stat-progress"></div></div>
+        </div>
+
+        <div id="stats-teams-list"></div>
+        <button id="btn-refresh-stats" class="btn btn-sm btn-block" style="margin-top:12px;">Aktualisieren</button>
+      </section>
+
+      <!-- ── TAB: DATEN ────────────────────────────── -->
+      <section class="tab-panel" id="tab-data">
+        <h3>Speichern &amp; Laden</h3>
+        <div class="data-actions">
+          <button id="btn-export" class="btn btn-primary btn-block">Export als JSON</button>
+          <label class="btn btn-block btn-secondary file-label">
+            Import aus JSON
+            <input type="file" id="import-file" accept=".json" style="display:none;" />
+          </label>
+        </div>
+
+        <hr />
+        <h3>Filter &amp; Suche</h3>
+        <label>Team-Filter
+          <select id="filter-team-select"><option value="">Alle Teams</option></select>
+        </label>
+        <label>Raum-Filter
+          <select id="filter-room-select"><option value="">Alle Räume</option></select>
+        </label>
+        <label>Status-Filter
+          <select id="filter-status-select">
+            <option value="">Alle Status</option>
+            <option value="free">Frei</option>
+            <option value="occupied">Belegt</option>
+            <option value="reserved">Reserviert</option>
+            <option value="blocked">Blockiert</option>
+          </select>
+        </label>
+        <label>Platz suchen
+          <input type="text" id="search-seat" placeholder="z.B. A3" />
+        </label>
+        <button id="btn-search" class="btn btn-sm btn-block">Suchen &amp; Springen</button>
+
+        <hr />
+        <h3>Zurücksetzen</h3>
+        <button id="btn-reset-all" class="btn btn-danger btn-block">Alle Daten löschen</button>
+        <p class="hint">Entfernt alle Plätze, Teams und Zuweisungen aus dem Browser-Speicher.</p>
+      </section>
+
+    </aside>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ MODALS -->
+
+  <!-- Platz-Detail-Modal -->
+  <div class="modal-backdrop" id="modal-seat" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Platz bearbeiten</h3>
+        <button class="modal-close" data-modal="modal-seat">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Bezeichnung<input type="text" id="modal-seat-label" maxlength="20" /></label>
+        <label>Raum / Zone<input type="text" id="modal-seat-room" maxlength="40" placeholder="z.B. TS1, Hinterrad 2" /></label>
+        <label>Status
+          <select id="modal-seat-status">
+            <option value="free">Frei</option>
+            <option value="occupied">Belegt</option>
+            <option value="reserved">Reserviert</option>
+            <option value="blocked">Blockiert</option>
+          </select>
+        </label>
+        <label>Typ
+          <select id="modal-seat-type">
+            <option value="fixed">Fest</option>
+            <option value="flex">Flex / Desk-Sharing</option>
+          </select>
+        </label>
+        <div id="share-factor-wrap" style="display:none;">
+          <label>Sharing-Faktor
+            <input type="number" id="modal-seat-share" value="1.5" min="1" max="10" step="0.1" />
+          </label>
+          <p class="hint">z.B. 1.5 = 3 Personen auf 2 Plätzen</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-seat-save" class="btn btn-primary">Speichern</button>
+        <button class="btn" data-modal="modal-seat">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Team-Edit-Modal -->
+  <div class="modal-backdrop" id="modal-team" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Team bearbeiten</h3>
+        <button class="modal-close" data-modal="modal-team">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Name<input type="text" id="modal-team-name" maxlength="40" /></label>
+        <label>Farbe<input type="color" id="modal-team-color" /></label>
+        <label>Bedarf (Plätze)<input type="number" id="modal-team-demand" min="0" /></label>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-team-save" class="btn btn-primary">Speichern</button>
+        <button class="btn" data-modal="modal-team">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bestätigungs-Modal -->
+  <div class="modal-backdrop" id="modal-confirm" style="display:none;">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3 id="confirm-title">Bestätigen</h3>
+        <button class="modal-close" data-modal="modal-confirm">&times;</button>
+      </div>
+      <div class="modal-body"><p id="confirm-message"></p></div>
+      <div class="modal-footer">
+        <button id="confirm-ok" class="btn btn-danger">OK</button>
+        <button class="btn" data-modal="modal-confirm">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="js/seed-jobrad2og.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/teams.js"></script>
+  <script src="js/seats.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
