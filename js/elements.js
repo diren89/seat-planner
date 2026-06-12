@@ -368,7 +368,15 @@ const Elements = (() => {
       const x2 = snap(cur.x, free), y2 = snap(cur.y, free);
       const x = Math.min(s.x, x2), y = Math.min(s.y, y2);
       const w = Math.abs(x2 - s.x), h = Math.abs(y2 - s.y);
-      if (w >= MIN && h >= MIN) addRoom(x, y, w, h);
+      if (w >= MIN && h >= MIN) {
+        const room = addRoom(x, y, w, h);
+        // Direkt nach dem Aufziehen benennen lassen
+        openElementModal(room.id);
+        requestAnimationFrame(() => {
+          const inp = document.getElementById('modal-el-room-label');
+          if (inp) { inp.focus(); inp.select(); }   // Default "Raum" markiert → Tippen ersetzt ihn
+        });
+      }
     } else {
       const p = snapLine(s.x, s.y, cur.x, cur.y, free);
       if (Math.hypot(p.x - s.x, p.y - s.y) >= MIN) addWall(s.x, s.y, p.x, p.y);

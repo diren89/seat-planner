@@ -270,6 +270,12 @@
       Elements.saveElementModal();
     });
 
+    // Room name field: Enter = save, Escape = cancel
+    document.getElementById('modal-el-room-label').addEventListener('keydown', e => {
+      if (e.key === 'Enter')  { e.preventDefault(); Elements.saveElementModal(); }
+      if (e.key === 'Escape') { document.getElementById('modal-element').style.display = 'none'; }
+    });
+
     // Confirm modal
     document.getElementById('confirm-ok').addEventListener('click', () => {
       if (_pendingConfirmFn) _pendingConfirmFn();
