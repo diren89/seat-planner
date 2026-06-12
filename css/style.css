@@ -99,6 +99,8 @@ html, body {
   overflow: hidden;
   position: relative;
   cursor: default;
+  user-select: none;          /* never highlight the plan on (double-)click/drag */
+  -webkit-user-select: none;
 }
 
 .plan-stage {
@@ -669,8 +671,12 @@ input[type="color"] {
 }
 
 /* Shapes become interactive only in the select tool */
-#plan-overlay.mode-select .arch { pointer-events: visiblePainted; cursor: move; }
-#plan-overlay.mode-select .arch-wall { pointer-events: stroke; }
+/* Shapes are clickable in every tool (so double-click edits anywhere);
+   the SVG root stays pointer-events:none so empty areas pass through
+   to the stage (lasso / seat placement / deselect). */
+#plan-overlay .arch { pointer-events: visiblePainted; }
+#plan-overlay .arch-wall { pointer-events: stroke; }
+#plan-overlay.mode-select .arch { cursor: move; }
 
 /* Rooms */
 .arch-room-rect {

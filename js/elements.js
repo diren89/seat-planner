@@ -231,12 +231,17 @@ const Elements = (() => {
   /* ── Events: Auswahl + Body-Drag ──────────────────────────── */
   function _attachEvents(g, id) {
     g.addEventListener('mousedown', e => {
+      // In Zeichen-Modi durchreichen (nicht stoppen), damit Zeichnen über
+      // bestehenden Elementen funktioniert.
       if (e.button !== 0 || _getTool() !== 'select') return;
+      e.preventDefault();                   // keine native Textauswahl
       e.stopPropagation();                  // verhindert Lasso/Pan
       selectElement(id);
       _startBodyDrag(e, id);
     });
+    // Doppelklick öffnet das Editieren-Modal in JEDEM Werkzeug (wie Sitzplätze)
     g.addEventListener('dblclick', e => {
+      e.preventDefault();
       e.stopPropagation();
       openElementModal(id);
     });
@@ -395,7 +400,10 @@ const Elements = (() => {
       if (e.button !== 0) return;
       const tool = getTool();
       if (tool === 'select' || tool === 'seat') return;   // select/seat anderswo behandelt
-      // Nicht starten, wenn auf bestehendem Element (dort: select-mode only)
+      // Nicht zeichnen, wenn der Druck auf einem bestehenden Element/Handle
+      // beginnt — sonst kollidiert die Zeichen-Maschinerie mit dem Doppelklick
+      // zum Bearbeiten. Zum Zeichnen auf freier Fläche beginnen.
+      if (e.target.closest && e.target.closest('.arch, .arch-handle')) return;
       _startDraw(e);
     });
 

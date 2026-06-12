@@ -562,11 +562,17 @@
     Seats.initLasso(viewport, stage, getTransform);
     Elements.initInteractions(viewport, stage, getTransform, getTool);
 
-    // Click on empty stage: place seat (seat tool) or deselect (select tool)
+    // Click on plan: place seat (seat tool) or deselect (select tool)
     stage.addEventListener('click', e => {
-      const onEmpty = e.target === stage || e.target.id === 'floorplan-img' || e.target.id === 'plan-overlay';
-      if (!onEmpty) return;
+      const t = e.target;
+      const onSeat   = t.classList && t.classList.contains('seat');
+      const onHandle = t.classList && t.classList.contains('arch-handle');
+      const onEmpty  = t === stage || t.id === 'floorplan-img' || t.id === 'plan-overlay';
+
       if (_tool === 'seat') {
+        // Single click only (e.detail>1 = part of a double-click); allow on top
+        // of rooms/walls, but not on an existing seat or a handle.
+        if (e.detail > 1 || onSeat || onHandle) return;
         const rect = stage.getBoundingClientRect();
         const x = Math.round((e.clientX - rect.left) / _zoom);
         const y = Math.round((e.clientY - rect.top)  / _zoom);
@@ -574,7 +580,7 @@
         Seats.addSeat(x, y, 'S' + n);
         return;
       }
-      if (_tool === 'select') {
+      if (_tool === 'select' && onEmpty) {
         Seats.clearSelection();
         Elements.clearSelection();
       }
