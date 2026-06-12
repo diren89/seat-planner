@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Node (falls später ein Build dazukommt)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Python (Analyse-/Hilfsskripte)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
