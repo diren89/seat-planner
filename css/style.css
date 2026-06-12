@@ -632,6 +632,101 @@ input[type="color"] {
 
 .muted { color: var(--text-muted); font-size: 12px; }
 
+/* ── Tool palette ──────────────────────────────────────────────── */
+.tool-palette { display: flex; gap: 4px; flex-shrink: 0; }
+
+.tool-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.tool-btn:hover  { color: var(--text); border-color: var(--border-dark); }
+.tool-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* Cursor hints while drawing */
+.plan-viewport.mode-draw { cursor: crosshair; }
+
+/* ── Architecture overlay (rooms / walls / doors) ──────────────── */
+#plan-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 1139px;
+  height: 1349px;
+  pointer-events: none;       /* shapes opt in only in select mode */
+  z-index: 5;                 /* above image, below seats (z-index:10) */
+  overflow: visible;
+}
+
+/* Shapes become interactive only in the select tool */
+#plan-overlay.mode-select .arch { pointer-events: visiblePainted; cursor: move; }
+#plan-overlay.mode-select .arch-wall { pointer-events: stroke; }
+
+/* Rooms */
+.arch-room-rect {
+  fill-opacity: .14;
+  stroke: #2563eb;
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+.arch-room.selected .arch-room-rect { fill-opacity: .24; stroke-dasharray: none; stroke-width: 3; }
+.arch-room-label {
+  font-size: 16px;
+  font-weight: 700;
+  fill: #1d4ed8;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3px;
+  pointer-events: none;
+}
+
+/* Walls */
+.arch-wall-line {
+  stroke: #374151;
+  stroke-linecap: round;
+}
+.arch-wall-hit { stroke: transparent; }
+.arch-wall.selected .arch-wall-line { stroke: var(--primary); }
+
+/* Doors */
+.arch-door-frame { stroke: #374151; stroke-width: 3; }
+.arch-door-leaf  { stroke: #6b7280; stroke-width: 2; }
+.arch-door-arc   { fill: none; stroke: #9ca3af; stroke-width: 1.5; stroke-dasharray: 3 3; }
+.arch-door.selected .arch-door-frame { stroke: var(--primary); }
+.arch-door.selected .arch-door-leaf  { stroke: var(--primary); }
+
+/* Resize / move handles */
+.arch-handle {
+  fill: #fff;
+  stroke: var(--primary);
+  stroke-width: 2;
+  pointer-events: all;
+  cursor: pointer;
+}
+.arch-handle:hover { fill: var(--primary); }
+.arch-handle-rotate { fill: var(--warn); stroke: var(--warn); }
+
+/* Draw preview */
+.arch-preview {
+  fill: rgba(37,99,235,.12);
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  pointer-events: none;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

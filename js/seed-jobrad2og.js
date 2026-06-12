@@ -96,5 +96,6 @@ const JOBRAD_2OG_STATE = {
     { id: "jr2-94",  x:  293, y:  414, label: "2-94",  teamId: null, status: "free", type: "fixed", shareFactor: 1, room: "TS10"          }
   ],
   teams: [],
+  elements: [],
   view: { zoom: 1, panX: 0, panY: 0 }
 };

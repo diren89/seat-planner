@@ -12,6 +12,7 @@
   const DEFAULT_STATE = {
     seats: [],
     teams: [],
+    elements: [],
     view:  { zoom: 1, panX: 0, panY: 0 }
   };
 
@@ -43,6 +44,7 @@
      ══════════════════════════════════════════════════════════ */
   function refresh(full = false) {
     Seats.render();
+    Elements.render(document.getElementById('plan-overlay'));
     Teams.renderList();
     Teams.renderAssignSelect();
     Stats.render();
@@ -160,7 +162,7 @@
       if (e.key === '-')                setZoom(_zoom - ZOOM_STEP);
       if (e.key === '0')               resetZoom();
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
-      if (e.key === 'Escape')          Seats.clearSelection();
+      if (e.key === 'Escape')          { Seats.clearSelection(); Elements.clearSelection(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault();
         Seats.selectMany(Seats.getAll().map(s => s.id));
@@ -175,6 +177,44 @@
   function resetZoom() {
     _zoom = 1; _panX = 0; _panY = 0;
     applyTransform();
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     TOOL PALETTE  (select | room | wall | door | seat)
+     ══════════════════════════════════════════════════════════ */
+  let _tool = 'select';
+
+  const TOOL_HINTS = {
+    select: 'Klick = auswählen · Ziehen (leer) = Lasso · Doppelklick = bearbeiten · Handles = Größe ändern',
+    room:   'Ziehen = Raum aufziehen · Alt = frei (kein Raster)',
+    wall:   'Ziehen = Wand · rastet auf 0/45/90° · Alt = frei',
+    door:   'Klick = Tür platzieren · danach drehen/bearbeiten im Auswählen-Modus',
+    seat:   'Klick = Arbeitsplatz setzen'
+  };
+
+  function getTool() { return _tool; }
+
+  function setTool(tool) {
+    _tool = tool;
+    document.querySelectorAll('.tool-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.tool === tool));
+
+    const overlay  = document.getElementById('plan-overlay');
+    const viewport = document.getElementById('plan-viewport');
+    if (overlay)  overlay.classList.toggle('mode-select', tool === 'select');
+    if (viewport) viewport.classList.toggle('mode-draw', tool !== 'select');
+
+    const hint = document.getElementById('toolbar-hint');
+    if (hint) hint.textContent = TOOL_HINTS[tool] || '';
+
+    // Auswahl räumen beim Werkzeugwechsel
+    if (tool !== 'select') { Seats.clearSelection(); Elements.clearSelection(); }
+  }
+
+  function initToolPalette() {
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => setTool(btn.dataset.tool));
+    });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -225,6 +265,11 @@
       Teams.saveEditModal();
     });
 
+    // Element (room/wall/door) modal save
+    document.getElementById('modal-element-save').addEventListener('click', () => {
+      Elements.saveElementModal();
+    });
+
     // Confirm modal
     document.getElementById('confirm-ok').addEventListener('click', () => {
       if (_pendingConfirmFn) _pendingConfirmFn();
@@ -246,6 +291,18 @@
      TOOLBAR / PLAN ACTIONS
      ══════════════════════════════════════════════════════════ */
   function deleteSelected() {
+    // Architektur-Element hat Vorrang, wenn eines ausgewählt ist
+    const elId = Elements.getSelectedId();
+    if (elId) {
+      const el = Elements.get(elId);
+      const label = { room: 'Raum', wall: 'Wand', door: 'Tür' }[el?.kind] || 'Element';
+      confirm('Element löschen', `${label} wirklich löschen?`, () => {
+        Elements.deleteElements([elId]);
+        toast(`${label} gelöscht.`);
+      });
+      return;
+    }
+
     const ids = Seats.getSelectedIds();
     if (ids.length === 0) return;
     confirm(
@@ -260,28 +317,19 @@
 
   function updateSelectionUI() {
     const ids = Seats.getSelectedIds();
-    const hasSelection = ids.length > 0;
+    const hasSeats   = ids.length > 0;
+    const hasElement = !!Elements.getSelectedId();
 
-    document.getElementById('btn-delete-selected').disabled  = !hasSelection;
-    document.getElementById('btn-clear-assign').disabled     = !hasSelection;
+    document.getElementById('btn-delete-selected').disabled  = !(hasSeats || hasElement);
+    document.getElementById('btn-clear-assign').disabled     = !hasSeats;
 
     const assignActions = document.getElementById('assign-actions');
     const assignCount   = document.getElementById('assign-count');
-    if (assignActions) assignActions.style.display = hasSelection ? 'flex' : 'none';
+    if (assignActions) assignActions.style.display = hasSeats ? 'flex' : 'none';
     if (assignCount)   assignCount.textContent = ids.length;
   }
 
   function initToolbar() {
-    // Add single seat at center of viewport
-    document.getElementById('btn-add-seat').addEventListener('click', () => {
-      const vp = document.getElementById('plan-viewport');
-      const x  = Math.round((vp.clientWidth  / 2 - _panX) / _zoom);
-      const y  = Math.round((vp.clientHeight / 2 - _panY) / _zoom);
-      const n  = Seats.getAll().length + 1;
-      Seats.addSeat(x, y, 'S' + n);
-      toast('Einzelplatz hinzugefügt.');
-    });
-
     document.getElementById('btn-delete-selected').addEventListener('click', deleteSelected);
 
     document.getElementById('btn-clear-assign').addEventListener('click', () => {
@@ -495,7 +543,8 @@
     }
 
     // Init modules
-    Seats.init(getState, (next) => setState(next), onChange);
+    Seats.init(getState, (next) => setState(next), onChange, getTool);
+    Elements.init(getState, (next) => setState(next), onChange);
     Teams.init(getState, (next) => setState(next), onChange);
     Stats.init(getState);
 
@@ -505,15 +554,28 @@
     const stage    = document.getElementById('plan-stage');
     Seats.initDragHandlers(viewport, getZoom);
     Seats.initLasso(viewport, stage, getTransform);
+    Elements.initInteractions(viewport, stage, getTransform, getTool);
 
-    // Click on empty stage = deselect
+    // Click on empty stage: place seat (seat tool) or deselect (select tool)
     stage.addEventListener('click', e => {
-      if (e.target === stage || e.target.id === 'floorplan-img') {
+      const onEmpty = e.target === stage || e.target.id === 'floorplan-img' || e.target.id === 'plan-overlay';
+      if (!onEmpty) return;
+      if (_tool === 'seat') {
+        const rect = stage.getBoundingClientRect();
+        const x = Math.round((e.clientX - rect.left) / _zoom);
+        const y = Math.round((e.clientY - rect.top)  / _zoom);
+        const n = Seats.getAll().length + 1;
+        Seats.addSeat(x, y, 'S' + n);
+        return;
+      }
+      if (_tool === 'select') {
         Seats.clearSelection();
+        Elements.clearSelection();
       }
     });
 
     // Wire up UI
+    initToolPalette();
     initTabs();
     initModals();
     initToolbar();

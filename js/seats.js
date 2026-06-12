@@ -11,16 +11,17 @@ const Seats = (() => {
   }
 
   /* ── State ────────────────────────────────────────────────── */
-  let _getState, _setState, _onChange;
+  let _getState, _setState, _onChange, _getTool;
   let _selectedIds = [];
   let _filterTeam  = '';
   let _filterStatus = '';
   let _filterRoom = '';
 
-  function init(getState, setState, onChange) {
+  function init(getState, setState, onChange, getTool) {
     _getState  = getState;
     _setState  = setState;
     _onChange  = onChange;
+    _getTool   = getTool || (() => 'select');
   }
 
   /* ── Model helpers ────────────────────────────────────────── */
@@ -86,6 +87,7 @@ const Seats = (() => {
 
   /* ── Selection ────────────────────────────────────────────── */
   function select(id, multi = false) {
+    if (typeof Elements !== 'undefined') Elements.clearSelection(true);
     if (multi) {
       _selectedIds = _selectedIds.includes(id)
         ? _selectedIds.filter(x => x !== id)
@@ -101,9 +103,10 @@ const Seats = (() => {
     _onChange('selection-changed', _selectedIds);
   }
 
-  function clearSelection() {
+  function clearSelection(silent = false) {
+    if (_selectedIds.length === 0) return;
     _selectedIds = [];
-    _onChange('selection-changed', _selectedIds);
+    if (!silent) _onChange('selection-changed', _selectedIds);
   }
 
   function getSelectedIds() { return _selectedIds; }
@@ -203,6 +206,7 @@ const Seats = (() => {
     // Drag start
     el.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
+      if (_getTool() !== 'select') return;   // in Zeichen-Modi: durchreichen
       e.stopPropagation();
       const id   = el.dataset.id;
       const seat = _getState().seats.find(s => s.id === id);
@@ -225,6 +229,7 @@ const Seats = (() => {
 
     // Click (select)
     el.addEventListener('click', e => {
+      if (_getTool() !== 'select') return;
       e.stopPropagation();
       select(el.dataset.id, e.ctrlKey || e.metaKey || e.shiftKey);
     });
@@ -276,7 +281,9 @@ const Seats = (() => {
 
     viewport.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
+      if (_getTool() !== 'select') return;   // Lasso nur im Auswählen-Modus
       if (e.target.classList.contains('seat')) return;
+      if (e.target.closest && e.target.closest('.arch, .arch-handle')) return;
 
       const rect   = stage.getBoundingClientRect();
       const t      = getTransform();
