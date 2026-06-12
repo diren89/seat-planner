@@ -15,7 +15,7 @@ const Elements = (() => {
   const MIN    = 12;            // Mindestgröße Raum / Wandlänge
 
   /* ── Defaults ─────────────────────────────────────────────── */
-  const ROOM_COLOR  = '#3b82f6';
+  const ROOM_COLOR  = '#B0E572';   // JobRad Maigrün
   const WALL_THICK  = 6;
   const DOOR_WIDTH  = 40;
 
