@@ -15,7 +15,7 @@ const Elements = (() => {
   const MIN    = 12;            // Mindestgröße Raum / Wandlänge
 
   /* ── Defaults ─────────────────────────────────────────────── */
-  const ROOM_COLOR  = '#B0E572';   // JobRad Maigrün
+  const ROOM_COLOR  = '#b1e571';   // Peloton secondary-brand (green-300)
   const WALL_THICK  = 6;
   const DOOR_WIDTH  = 40;
 

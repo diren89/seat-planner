@@ -7,45 +7,93 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* ── JobRad brand palette ─────────────────────────────────── */
-  --anthrazit:   #2B373D;   /* primary dark / default text */
-  --maigruen:    #B0E572;   /* fresh accent */
-  --pink:        #FFBCDF;   /* warm accent */
-  --gelb:        #FFFA65;   /* digital CTA only */
+  /* ═══ JobRad Peloton design system — product UI tokens ═══════
+     Primitives (--color-*) and semantic UI tokens (--pltn-*) mirror
+     the Peloton library so this mockup maps onto real components. */
 
-  --bg:          #eceef0;
-  --surface:     #ffffff;
-  --surface2:    #f4f6f7;
-  --border:      #dde1e3;
-  --border-dark: #aab2b8;
-  --text:        #2B373D;   /* Anthrazit */
-  --text-muted:  #5b6770;
-  --primary:     #2B373D;   /* Anthrazit — structural accent / selection */
-  --primary-h:   #3a4952;
-  --accent:      #B0E572;   /* Maigrün — active states */
-  --accent-h:    #9fd95e;
-  --cta:         #FFFA65;   /* Gelb — primary call-to-action buttons */
-  --cta-h:       #f1ec4a;
-  --danger:      #dc2626;
-  --danger-h:    #b91c1c;
-  --warn:        #d97706;
-  --success:     #16a34a;
+  /* Color primitives */
+  --color-none-white:   #ffffff;
+  --color-black-50:     #f2f4f5;
+  --color-black-100:    #d0dade;
+  --color-black-200:    #b2c1c8;
+  --color-black-300:    #93a8b2;
+  --color-black-500:    #57737e;
+  --color-black-600:    #485e68;
+  --color-black-800:    #29363c;   /* product neutral dark */
+  --color-black-900:    #11171a;
+  --color-green-200:    #c8ed9c;
+  --color-green-300:    #b1e571;   /* ≈ Maigrün — secondary-brand */
+  --color-green-400:    #9dde4c;   /* primary action (green) */
+  --color-green-500:    #8dd72b;
+  --color-green-600:    #7cc622;
+  --color-green-700:    #66b216;
+  --color-green-800:    #4f9c0d;   /* focus / strong */
+  --color-pink-100:     #ffbcdf;
+  --color-orange-300:   #ffb37a;
+  --color-orange-400:   #fa9950;
+  --color-orange-600:   #e36a19;
+  --color-red-200:      #ff8383;
+  --color-red-400:      #db0a0a;   /* danger */
+  --color-red-500:      #a80808;
 
-  /* seat status colors — mapped to the brand where it stays legible */
-  --seat-free:      #B0E572;   /* Maigrün */
-  --seat-occupied:  #2B373D;   /* Anthrazit */
-  --seat-reserved:  #FFBCDF;   /* Pink */
-  --seat-blocked:   #9aa3a9;   /* neutral gray */
+  /* Peloton semantic UI tokens */
+  --pltn-action-primary-bg:     var(--color-green-400);
+  --pltn-action-primary-border: var(--color-green-700);
+  --pltn-action-primary-hover:  var(--color-green-700);
+  --pltn-action-primary-text:   var(--color-black-800);
+  --pltn-bg-default:            var(--color-none-white);
+  --pltn-bg-dark:               var(--color-black-50);
+  --pltn-bg-darker:             var(--color-black-100);
+  --pltn-text-default:          var(--color-black-800);
+  --pltn-text-light:            var(--color-black-500);
+  --pltn-border-default:        var(--color-black-200);
+  --pltn-border-dark:           var(--color-black-300);
+  --pltn-border-focus:          var(--color-green-800);
+  --pltn-focus-outline:         3px solid var(--pltn-border-focus);
+  --pltn-border-radius-sm:      2px;
+  --pltn-border-radius-md:      4px;
+  --pltn-border-radius-lg:      8px;
+  --pltn-border-radius-full:    128px;
+
+  /* ── App-level aliases mapped onto the product tokens ──────── */
+  --ink:         var(--color-black-800);   /* product neutral dark (was Anthrazit) */
+  --anthrazit:   var(--color-black-800);   /* alias kept for existing rules */
+  --maigruen:    var(--color-green-300);
+  --pink:        var(--color-pink-100);
+
+  --bg:          var(--color-black-50);
+  --surface:     var(--color-none-white);
+  --surface2:    var(--color-black-50);
+  --border:      var(--color-black-100);
+  --border-dark: var(--color-black-300);
+  --text:        var(--color-black-800);
+  --text-muted:  var(--color-black-500);
+  --primary:     var(--color-black-800);   /* structural accent / selection */
+  --primary-h:   var(--color-black-600);
+  --accent:      var(--color-green-400);   /* active states (green) */
+  --accent-h:    var(--color-green-500);
+  --cta:         var(--color-green-400);   /* primary CTA = GREEN (no yellow in product UI) */
+  --cta-h:       var(--color-green-600);
+  --danger:      var(--color-red-400);
+  --danger-h:    var(--color-red-500);
+  --warn:        var(--color-orange-400);
+  --success:     var(--color-green-600);
+
+  /* seat status colors — product status palette */
+  --seat-free:      var(--color-green-300);   /* available */
+  --seat-occupied:  var(--color-black-800);   /* taken */
+  --seat-reserved:  var(--color-orange-300);  /* held (warning) */
+  --seat-blocked:   var(--color-black-300);   /* unavailable */
 
   --seat-size: 34px;
   --sidebar-w: 300px;
   --header-h: 48px;
   --toolbar-h: 44px;
 
-  --radius: 6px;
-  --radius-sm: 4px;
-  --shadow: 0 2px 8px rgba(0,0,0,.12);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+  --radius: 8px;            /* lg */
+  --radius-sm: 4px;         /* md */
+  --shadow: 0 2px 8px rgba(17,23,26,.12);
+  --shadow-sm: 0 1px 3px rgba(17,23,26,.08);
 }
 
 html, body {
@@ -355,11 +403,11 @@ input[type="color"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 12px;
+  padding: 7px 16px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--pltn-border-radius-full);   /* pill — Peloton button shape */
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   background: var(--surface);
   color: var(--text);
@@ -371,8 +419,19 @@ input[type="color"] {
 .btn:active { opacity: .8; }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
 
-.btn-primary   { background: var(--cta); color: var(--anthrazit); border-color: var(--cta); }
-.btn-primary:hover { background: var(--cta-h); border-color: var(--cta-h); }
+/* Keyboard focus — Peloton focus token (never removed) */
+.btn:focus-visible,
+.tab-btn:focus-visible,
+.tool-btn:focus-visible,
+.modal-close:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: var(--pltn-focus-outline);
+  outline-offset: 2px;
+}
+
+.btn-primary   { background: var(--pltn-action-primary-bg); color: var(--pltn-action-primary-text); border-color: var(--pltn-action-primary-border); }
+.btn-primary:hover { background: var(--pltn-action-primary-hover); border-color: var(--pltn-action-primary-hover); }
 
 .btn-secondary { background: var(--surface2); border-color: var(--border-dark); }
 
