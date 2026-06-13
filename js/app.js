@@ -45,6 +45,7 @@
   function refresh(full = false) {
     Seats.render();
     Elements.render(document.getElementById('plan-overlay'));
+    Elements.renderDetailPanel();
     Teams.renderList();
     Teams.renderAssignSelect();
     Stats.render();
@@ -217,6 +218,21 @@
     });
   }
 
+  /* Grundriss-Tab: Edit/Delete des ausgewählten Elements (Delegation) */
+  function initLayoutTab() {
+    const panel = document.getElementById('element-detail');
+    if (!panel) return;
+    panel.addEventListener('click', e => {
+      if (e.target.closest('.btn-el-edit')) {
+        const id = Elements.getSelectedId();
+        if (id) Elements.openElementModal(id);
+      }
+      if (e.target.closest('.btn-el-delete')) {
+        deleteSelected();
+      }
+    });
+  }
+
   /* ══════════════════════════════════════════════════════════
      TABS
      ══════════════════════════════════════════════════════════ */
@@ -227,6 +243,9 @@
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById(btn.dataset.tab)?.classList.add('active');
+
+        // Drawing tools live in the Grundriss tab — reset to select elsewhere
+        if (btn.dataset.tab !== 'tab-layout' && _tool !== 'select') setTool('select');
 
         // Refresh stats when switching to that tab
         if (btn.dataset.tab === 'tab-stats') Stats.render();
@@ -588,6 +607,7 @@
 
     // Wire up UI
     initToolPalette();
+    initLayoutTab();
     initTabs();
     initModals();
     initToolbar();

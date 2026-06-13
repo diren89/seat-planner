@@ -24,6 +24,15 @@ const Seats = (() => {
     _getTool   = getTool || (() => 'select');
   }
 
+  /* ── Ausstattung (Arbeitsplatz-Equipment) ─────────────────── */
+  const EQUIPMENT_LABEL = {
+    '':          'Standard',
+    'ultrawide': 'Ultrawide-Monitor',
+    'dual':      'Dual-Monitor',
+    'dual-uhd':  'Dual-UHD-Monitor'
+  };
+  const EQUIPMENT_BADGE = { 'ultrawide': 'UW', 'dual': '2M', 'dual-uhd': 'UHD' };
+
   /* ── Model helpers ────────────────────────────────────────── */
   function createSeat(x, y, label) {
     return {
@@ -35,7 +44,9 @@ const Seats = (() => {
       status:      'free',   // free | occupied | reserved | blocked
       type:        'fixed',  // fixed | flex
       shareFactor: 1.0,
-      room:        ''        // optionaler Raum / Zone (z.B. "TS1", "Hinterrad 2")
+      room:        '',       // optionaler Raum / Zone (z.B. "TS1", "Hinterrad 2")
+      equipment:   '',       // '' | ultrawide | dual | dual-uhd
+      equipmentNote: ''      // Freitext zur Ausstattung
     };
   }
 
@@ -169,6 +180,12 @@ const Seats = (() => {
       // Status & type attributes
       el.dataset.status = seat.status;
       el.dataset.type   = seat.type;
+      el.dataset.equipment = seat.equipment || '';
+
+      // Tooltip: label + Ausstattung + Notiz
+      const equipLabel = EQUIPMENT_LABEL[seat.equipment] || 'Standard';
+      el.title = seat.label + ' — ' + equipLabel +
+        (seat.equipmentNote ? ' · ' + seat.equipmentNote : '');
 
       // Team color override
       const team = seat.teamId ? teamMap[seat.teamId] : null;
@@ -353,6 +370,8 @@ const Seats = (() => {
     document.getElementById('modal-seat-type').value   = seat.type;
     document.getElementById('modal-seat-share').value  = seat.shareFactor || 1.0;
     document.getElementById('modal-seat-room').value   = seat.room || '';
+    document.getElementById('modal-seat-equipment').value = seat.equipment || '';
+    document.getElementById('modal-seat-note').value      = seat.equipmentNote || '';
 
     const sfWrap = document.getElementById('share-factor-wrap');
     sfWrap.style.display = seat.type === 'flex' ? 'block' : 'none';
@@ -368,7 +387,9 @@ const Seats = (() => {
       status:      document.getElementById('modal-seat-status').value,
       type:        type,
       shareFactor: parseFloat(document.getElementById('modal-seat-share').value) || 1.0,
-      room:        document.getElementById('modal-seat-room').value.trim()
+      room:        document.getElementById('modal-seat-room').value.trim(),
+      equipment:   document.getElementById('modal-seat-equipment').value,
+      equipmentNote: document.getElementById('modal-seat-note').value.trim()
     });
     _editingSeatId = null;
     document.getElementById('modal-seat').style.display = 'none';
@@ -398,6 +419,8 @@ const Seats = (() => {
         <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">${statusLabel[s.status] || s.status}</span></div>
         <div class="detail-row"><span class="detail-label">Raum</span><span class="detail-value">${s.room ? escHtml(s.room) : '—'}</span></div>
         <div class="detail-row"><span class="detail-label">Typ</span><span class="detail-value">${s.type === 'flex' ? 'Flex (×' + s.shareFactor + ')' : 'Fest'}</span></div>
+        <div class="detail-row"><span class="detail-label">Ausstattung</span><span class="detail-value">${escHtml(EQUIPMENT_LABEL[s.equipment] || 'Standard')}</span></div>
+        ${s.equipmentNote ? `<div class="detail-row"><span class="detail-label">Notiz</span><span class="detail-value">${escHtml(s.equipmentNote)}</span></div>` : ''}
         <div class="detail-row"><span class="detail-label">Team</span><span class="detail-value">${team ? escHtml(team.name) : '—'}</span></div>
         <div class="detail-row"><span class="detail-label">Position</span><span class="detail-value">${s.x}, ${s.y}</span></div>
       `;

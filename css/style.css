@@ -251,6 +251,26 @@ html, body {
   border: 1px solid #fff;
 }
 
+/* Equipment badge (bottom-left) — workplace setup at a glance */
+.seat[data-equipment]:not([data-equipment=""])::before {
+  position: absolute;
+  bottom: -5px; left: -5px;
+  min-width: 12px; height: 12px;
+  padding: 0 3px;
+  background: var(--pink);
+  border-radius: 7px;
+  font-size: 7px;
+  line-height: 12px;
+  text-align: center;
+  color: var(--ink);
+  font-weight: 800;
+  border: 1px solid #fff;
+  text-shadow: none;
+}
+.seat[data-equipment="ultrawide"]::before { content: "UW"; }
+.seat[data-equipment="dual"]::before      { content: "2M"; }
+.seat[data-equipment="dual-uhd"]::before  { content: "UHD"; }
+
 /* Dimmed by filter */
 .seat.dimmed { opacity: .2; pointer-events: none; }
 
@@ -722,6 +742,10 @@ select:focus-visible {
 
 /* ── Tool palette ──────────────────────────────────────────────── */
 .tool-palette { display: flex; gap: 4px; flex-shrink: 0; }
+
+/* In the Grundriss tab the palette stacks vertically, full width */
+#tab-layout .tool-palette { flex-direction: column; gap: 6px; }
+#tab-layout .tool-btn { width: 100%; text-align: left; padding: 8px 12px; font-size: 13px; }
 
 .tool-btn {
   font-size: 11px;

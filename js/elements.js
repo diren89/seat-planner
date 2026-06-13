@@ -476,11 +476,45 @@ const Elements = (() => {
     document.getElementById('modal-element').style.display = 'none';
   }
 
+  /* ── Detail panel (Grundriss-Tab) ─────────────────────────── */
+  const KIND_LABEL = { room: 'Raum', wall: 'Wand', door: 'Tür' };
+
+  function _esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function renderDetailPanel() {
+    const c = document.getElementById('element-detail');
+    if (!c) return;
+    const el = get(_selectedId);
+    if (!el) {
+      c.innerHTML = '<p class="muted">Kein Element ausgewählt.</p>';
+      return;
+    }
+    let rows = `<div class="detail-row"><span class="detail-label">Typ</span><span class="detail-value">${KIND_LABEL[el.kind] || el.kind}</span></div>`;
+    if (el.kind === 'room') {
+      rows += `<div class="detail-row"><span class="detail-label">Bezeichnung</span><span class="detail-value">${_esc(el.label || '—')}</span></div>`;
+      rows += `<div class="detail-row"><span class="detail-label">Größe</span><span class="detail-value">${el.w} × ${el.h}</span></div>`;
+    } else if (el.kind === 'wall') {
+      rows += `<div class="detail-row"><span class="detail-label">Länge</span><span class="detail-value">${Math.round(Math.hypot(el.x2 - el.x1, el.y2 - el.y1))} px</span></div>`;
+      rows += `<div class="detail-row"><span class="detail-label">Stärke</span><span class="detail-value">${el.thickness} px</span></div>`;
+    } else if (el.kind === 'door') {
+      rows += `<div class="detail-row"><span class="detail-label">Breite</span><span class="detail-value">${el.width} px</span></div>`;
+      rows += `<div class="detail-row"><span class="detail-label">Schwenkt</span><span class="detail-value">${el.swing === 'left' ? 'Links' : 'Rechts'}</span></div>`;
+    }
+    c.innerHTML = rows +
+      `<div class="detail-actions">
+         <button class="btn btn-sm btn-primary btn-el-edit">Bearbeiten</button>
+         <button class="btn btn-sm btn-danger btn-el-delete">Löschen</button>
+       </div>`;
+  }
+
   return {
     init, initInteractions, render,
     addRoom, addWall, addDoor, updateElement, deleteElements,
     getAll, get,
     selectElement, clearSelection, getSelectedId,
-    openElementModal, saveElementModal
+    openElementModal, saveElementModal, renderDetailPanel
   };
 })();

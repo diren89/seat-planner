@@ -36,13 +36,6 @@
       </div>
 
       <div class="plan-toolbar">
-        <div class="tool-palette" id="tool-palette">
-          <button class="tool-btn active" data-tool="select" title="Auswählen / Verschieben / Größe ändern">▣ Auswählen</button>
-          <button class="tool-btn" data-tool="room"   title="Raum aufziehen">▢ Raum</button>
-          <button class="tool-btn" data-tool="wall"   title="Trennwand ziehen">╱ Wand</button>
-          <button class="tool-btn" data-tool="door"   title="Tür platzieren">⌐ Tür</button>
-          <button class="tool-btn" data-tool="seat"   title="Arbeitsplatz setzen">● Arbeitsplatz</button>
-        </div>
         <span class="toolbar-hint" id="toolbar-hint">Klick = auswählen &nbsp;|&nbsp; Strg+Klick = Mehrfachauswahl &nbsp;|&nbsp; Ziehen auf freier Fläche = Lasso &nbsp;|&nbsp; Doppelklick = bearbeiten</span>
         <div class="toolbar-actions">
           <button id="btn-delete-selected" class="btn btn-sm btn-danger" disabled>Auswahl löschen</button>
@@ -55,14 +48,35 @@
     <aside class="sidebar" id="sidebar">
 
       <nav class="tab-nav">
-        <button class="tab-btn active" data-tab="tab-raster">Raster</button>
+        <button class="tab-btn active" data-tab="tab-layout">Grundriss</button>
+        <button class="tab-btn" data-tab="tab-raster">Raster</button>
         <button class="tab-btn" data-tab="tab-teams">Teams</button>
         <button class="tab-btn" data-tab="tab-stats">Statistik</button>
         <button class="tab-btn" data-tab="tab-data">Daten</button>
       </nav>
 
+      <!-- ── TAB: GRUNDRISS ───────────────────────── -->
+      <section class="tab-panel active" id="tab-layout">
+        <h3>Werkzeuge</h3>
+        <div class="tool-palette" id="tool-palette">
+          <button class="tool-btn active" data-tool="select" title="Auswählen / Verschieben / Größe ändern">▣ Auswählen</button>
+          <button class="tool-btn" data-tool="room"   title="Raum aufziehen">▢ Raum</button>
+          <button class="tool-btn" data-tool="wall"   title="Trennwand ziehen">╱ Wand</button>
+          <button class="tool-btn" data-tool="door"   title="Tür platzieren">⌐ Tür</button>
+          <button class="tool-btn" data-tool="seat"   title="Arbeitsplatz setzen">● Arbeitsplatz</button>
+        </div>
+        <p class="hint">Räume, Wände &amp; Türen werden direkt im Plan gezeichnet, verschoben und in der Größe geändert.</p>
+
+        <hr />
+
+        <h3>Ausgewähltes Element</h3>
+        <div id="element-detail" class="seat-detail">
+          <p class="muted">Kein Element ausgewählt.</p>
+        </div>
+      </section>
+
       <!-- ── TAB: RASTER ──────────────────────────── -->
-      <section class="tab-panel active" id="tab-raster">
+      <section class="tab-panel" id="tab-raster">
         <h3>Raster generieren</h3>
         <div class="form-grid">
           <label>Spalten<input type="number" id="grid-cols" value="8" min="1" max="30" /></label>
@@ -202,6 +216,15 @@
           </label>
           <p class="hint">z.B. 1.5 = 3 Personen auf 2 Plätzen</p>
         </div>
+        <label>Ausstattung
+          <select id="modal-seat-equipment">
+            <option value="">Standard</option>
+            <option value="ultrawide">Ultrawide-Monitor</option>
+            <option value="dual">Dual-Monitor</option>
+            <option value="dual-uhd">Dual-UHD-Monitor</option>
+          </select>
+        </label>
+        <label>Notiz / Freitext<input type="text" id="modal-seat-note" maxlength="80" placeholder="z.B. höhenverstellbar, Dockingstation" /></label>
       </div>
       <div class="modal-footer">
         <button id="modal-seat-save" class="btn btn-primary">Speichern</button>
