@@ -808,5 +808,12 @@
     console.info('[SeatPlanner] Ready.');
   }
 
-  document.addEventListener('DOMContentLoaded', boot);
+  // app.js is the last script in the chain. When loaded statically the DOM may
+  // still be parsing; when loaded dynamically after the password gate the
+  // DOMContentLoaded event has already fired — so boot() must run directly.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
 })();

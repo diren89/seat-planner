@@ -1,7 +1,7 @@
-# Sitzplatz-Planungsassistent — JobRad 2. OG
+# Sitzplatz-Planungsassistent
 
 Interaktiver Planungsassistent zur Sitzplatzvergabe für Entwicklungsteams.  
-Gebäudeplan: JobRad GmbH, 2. Obergeschoss.
+Gebäudeplan: 2. Obergeschoss.
 
 Beim ersten Start lädt automatisch die **interaktive Karte des 2. OG**: 82 aus dem
 Gebäudeplan extrahierte Arbeitsplätze (Desk-Nummern `2-02 … 2-94`), positionsgenau

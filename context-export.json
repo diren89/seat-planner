@@ -1,13 +1,13 @@
 {
   "project": {
     "name": "Sitzplatz-Planungsassistent",
-    "subtitle": "JobRad – 2. Obergeschoss",
+    "subtitle": "2. Obergeschoss",
     "type": "Standalone Web-App (Vanilla HTML/CSS/JS)",
     "created": "2025-06-12",
-    "author": "JobRad GmbH – OpenCode AI-Assisted Development",
+    "author": "OpenCode AI-Assisted Development",
     "entrypoint": "seat-planner/index.html",
     "no_build_required": true,
-    "description": "Interaktiver Planungsassistent zur Sitzplatzvergabe für Entwicklungsteams. Ermöglicht Einzelplatz-Auswahl, Raster-Generierung, Team-Zuweisung, Auslastungsanalyse und Bedarfssteuerung auf dem realen JobRad-Gebäudeplan (2. OG)."
+    "description": "Interaktiver Planungsassistent zur Sitzplatzvergabe für Entwicklungsteams. Ermöglicht Einzelplatz-Auswahl, Raster-Generierung, Team-Zuweisung, Auslastungsanalyse und Bedarfssteuerung auf dem Gebäudeplan (2. OG)."
   },
 
   "requirements": {
@@ -28,7 +28,7 @@
     "files": [
       {
         "path": "js/seed-jobrad2og.js",
-        "role": "Default-Karte (JobRad 2. OG)",
+        "role": "Default-Karte (2. OG)",
         "description": "Globale Konstante JOBRAD_2OG_STATE: 82 Arbeitsplätze, die per Bilderkennung aus floorplan/JobRad-2OG.jpg extrahiert wurden (Tile-Mittelpunkte in Bildkoordinaten 1139×1349). Jeder Desk trägt seine Plan-Nummer (label 2-02 … 2-94) und eine Raumzuordnung (room: TS1 … TS10, Hinterrad 2, oder leer). Status durchgängig 'free', type 'fixed'. Wird in app.js als Default geladen, wenn localStorage leer ist. Hinterrad 2 (2-73..2-76): Nummern im Plan nicht gedruckt, aus der Nummernlücke abgeleitet.",
         "lines": 100,
         "public_api": ["JOBRAD_2OG_STATE"]
@@ -129,7 +129,7 @@
       {
         "path": "floorplan/JobRad-2OG.jpg",
         "role": "Gebäudeplan",
-        "description": "Original-Grundriss JobRad 2. Obergeschoss. Kopiert aus 'JobRad Floorplan 2OGJCN/JobRad-2OG.jpg'.",
+        "description": "Original-Grundriss 2. Obergeschoss.",
         "dimensions": "1139 × 1349 px",
         "format": "JPEG"
       }
@@ -221,9 +221,7 @@
   },
 
   "floorplan": {
-    "building": "JobRad GmbH",
     "floor": "2. Obergeschoss",
-    "original_file": "JobRad Floorplan 2OGJCN/JobRad-2OG.jpg",
     "copy_in_project": "seat-planner/floorplan/JobRad-2OG.jpg",
     "dimensions_px": "1139 × 1349",
     "note": "Das Bild ist nur für Desktop-Bildschirme optimiert. Bei Zoom < 0.5 oder auf kleinen Monitoren ggf. Offset-Werte im Raster anpassen."
