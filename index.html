@@ -4,7 +4,142 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sitzplatz-Planungsassistent &ndash; JobRad 2. OG</title>
+  <script>
+  (function () {
+    'use strict';
+    var HASH = 'b34cd8e49aa0ba1d30841d6f4c4f7a8b4c779ea2dd07252d7c4fe6e67a3cf697';
+    var SCRIPTS = [
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+      'js/collab-config.js',
+      'js/seed-jobrad2og.js',
+      'js/storage.js',
+      'js/teams.js',
+      'js/seats.js',
+      'js/elements.js',
+      'js/collab.js',
+      'js/stats.js',
+      'js/app.js'
+    ];
+
+    function loadScripts(list) {
+      if (!list.length) return;
+      var s = document.createElement('script');
+      s.src = list[0];
+      s.onload  = function () { loadScripts(list.slice(1)); };
+      s.onerror = function () { loadScripts(list.slice(1)); };
+      document.head.appendChild(s);
+    }
+
+    if (sessionStorage.getItem('unlocked') === '1') {
+      document.addEventListener('DOMContentLoaded', function () { loadScripts(SCRIPTS); });
+      return;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var overlay = document.createElement('div');
+      overlay.id = 'lock-screen';
+      overlay.innerHTML = [
+        '<div class="lock-card">',
+        '  <img class="lock-logo" src="assets/logo_maigruen.svg" alt="JobRad" />',
+        '  <h1 class="lock-title">Sitzplatz-Planungsassistent</h1>',
+        '  <p class="lock-subtitle">Bitte Passwort eingeben</p>',
+        '  <form id="lock-form" novalidate>',
+        '    <div class="lock-input-wrap">',
+        '      <input id="lock-pw" type="password" autocomplete="current-password"',
+        '             placeholder="Passwort" class="lock-input" autofocus />',
+        '      <button type="button" id="lock-toggle" class="lock-toggle" aria-label="Passwort anzeigen">&#128065;</button>',
+        '    </div>',
+        '    <button type="submit" class="lock-btn">Entsperren</button>',
+        '  </form>',
+        '  <p id="lock-error" class="lock-error" aria-live="polite"></p>',
+        '</div>'
+      ].join('');
+      document.body.appendChild(overlay);
+
+      document.getElementById('lock-toggle').addEventListener('click', function () {
+        var inp = document.getElementById('lock-pw');
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+      });
+
+      document.getElementById('lock-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var raw = document.getElementById('lock-pw').value;
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw)).then(function (buf) {
+          var hex = Array.from(new Uint8Array(buf))
+            .map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+          if (hex === HASH) {
+            sessionStorage.setItem('unlocked', '1');
+            overlay.classList.add('lock-exit');
+            setTimeout(function () { overlay.remove(); loadScripts(SCRIPTS); }, 280);
+          } else {
+            document.getElementById('lock-pw').value = '';
+            document.getElementById('lock-error').textContent = 'Falsches Passwort.';
+            overlay.classList.add('lock-shake');
+            setTimeout(function () { overlay.classList.remove('lock-shake'); }, 500);
+          }
+        });
+      });
+    });
+  })();
+  </script>
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+  #lock-screen {
+    position: fixed; inset: 0; background: #29363c;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity .28s ease;
+  }
+  #lock-screen.lock-exit { opacity: 0; pointer-events: none; }
+  .lock-card {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; width: 320px; max-width: calc(100vw - 48px);
+  }
+  .lock-logo { height: 36px; width: auto; margin-bottom: 8px; }
+  .lock-title {
+    color: #fff; font-size: 18px; font-weight: 700;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    text-align: center; line-height: 1.3;
+  }
+  .lock-subtitle {
+    color: rgba(255,255,255,.6); font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin-bottom: 8px;
+  }
+  .lock-input-wrap { position: relative; width: 100%; }
+  .lock-input {
+    width: 100%; height: 44px; padding: 0 44px 0 16px;
+    border-radius: 128px; border: 1.5px solid rgba(255,255,255,.2);
+    background: rgba(255,255,255,.08); color: #fff; font-size: 15px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    outline: none; box-sizing: border-box; transition: border-color .15s;
+  }
+  .lock-input::placeholder { color: rgba(255,255,255,.38); }
+  .lock-input:focus { border-color: #9dde4c; }
+  .lock-toggle {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    font-size: 16px; color: rgba(255,255,255,.5); padding: 4px;
+  }
+  .lock-toggle:hover { color: rgba(255,255,255,.85); }
+  .lock-btn {
+    width: 100%; height: 44px; margin-top: 4px;
+    background: #9dde4c; color: #29363c; border: none;
+    border-radius: 128px; font-size: 15px; font-weight: 700;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    cursor: pointer; transition: background .15s;
+  }
+  .lock-btn:hover { background: #8dd72b; }
+  .lock-error {
+    color: #ff8383; font-size: 13px; min-height: 18px; text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  @keyframes lock-shake {
+    0%,100%{transform:translateX(0)} 15%{transform:translateX(-8px)}
+    30%{transform:translateX(8px)} 45%{transform:translateX(-6px)}
+    60%{transform:translateX(6px)} 75%{transform:translateX(-3px)} 90%{transform:translateX(3px)}
+  }
+  #lock-screen.lock-shake .lock-card { animation: lock-shake .5s ease; }
+  </style>
 </head>
 <body>
 
@@ -328,15 +463,5 @@
 
   <div class="toast-container" id="toast-container"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/collab-config.js"></script>
-  <script src="js/seed-jobrad2og.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/teams.js"></script>
-  <script src="js/seats.js"></script>
-  <script src="js/elements.js"></script>
-  <script src="js/collab.js"></script>
-  <script src="js/stats.js"></script>
-  <script src="js/app.js"></script>
 </body>
 </html>
