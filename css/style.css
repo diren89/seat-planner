@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   Sitzplatz-Planungsassistent – JobRad
+   Sitzplatz-Planungsassistent
    style.css
    ═══════════════════════════════════════════════════════════════ */
 
@@ -7,7 +7,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* ═══ JobRad Peloton design system — product UI tokens ═══════
+  /* ═══ Peloton design system — product UI tokens ═══════
      Primitives (--color-*) and semantic UI tokens (--pltn-*) mirror
      the Peloton library so this mockup maps onto real components. */
 

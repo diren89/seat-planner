@@ -11,7 +11,7 @@
     var SCRIPTS = [
       'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
       'js/collab-config.js',
-      'js/seed-jobrad2og.js',
+      'js/seed-2og.js',
       'js/storage.js',
       'js/teams.js',
       'js/seats.js',
@@ -145,7 +145,7 @@
   <!-- ═══════════════════════════════════════════════════════════ HEADER -->
   <header class="app-header">
     <div class="header-left">
-      <img class="header-logo" src="assets/logo_maigruen.svg" alt="JobRad" />
+      <img class="header-logo" data-src="assets/brand-mark.svg" alt="" />
       <span class="header-title">Sitzplatz-Planungsassistent &mdash; 2. OG</span>
     </div>
     <div class="header-right">
@@ -169,7 +169,7 @@
     <main class="plan-wrapper" id="plan-wrapper">
       <div class="plan-viewport" id="plan-viewport">
         <div class="plan-stage" id="plan-stage">
-          <img src="floorplan/JobRad-2OG.jpg" alt="Gebäudeplan 2. OG" id="floorplan-img" draggable="false" />
+          <img data-src="floorplan/plan-2og.jpg" alt="Gebäudeplan 2. OG" id="floorplan-img" draggable="false" />
           <svg id="plan-overlay" width="1139" height="1349" viewBox="0 0 1139 1349"></svg>
           <div class="peer-layer" id="peer-layer"></div>
           <div class="lasso" id="lasso"></div>
@@ -285,7 +285,7 @@
       <section class="tab-panel" id="tab-data">
         <h3>Standard-Plan</h3>
         <button id="btn-load-default" class="btn btn-primary btn-block">Standard-Plan laden</button>
-        <p class="hint">Lädt den JobRad 2.&nbsp;OG: alle Arbeitsplätze (2-02 … 2-94) und Teamspaces (TS1 … TS10, Hinterrad 2).</p>
+        <p class="hint">Lädt den Standard-Plan (2.&nbsp;OG): alle Arbeitsplätze (2-02 … 2-94) und Teamspaces (TS1 … TS10, Hinterrad 2).</p>
 
         <hr />
         <h3>Speichern &amp; Laden</h3>

@@ -28,14 +28,14 @@ seat-planner/
 ├── css/
 │   └── style.css           Vollständiges Styling
 ├── js/
-│   ├── seed-jobrad2og.js   Default-Karte: 82 Desks aus dem Plan (Bildkoordinaten + Raum)
+│   ├── seed-2og.js         Default-Karte: 82 Desks aus dem Plan (Bildkoordinaten + Raum)
 │   ├── storage.js          localStorage + JSON Export/Import
 │   ├── teams.js            Team-CRUD, Zuweisung
 │   ├── seats.js            Sitzplatz-Logik, Rendering, Drag, Lasso
 │   ├── stats.js            Auslastungsberechnung, Bedarfsanzeige
 │   └── app.js              Haupt-Controller, State, Zoom/Pan, Undo
 ├── floorplan/
-│   └── JobRad-2OG.jpg      Gebäudeplan (1139 × 1349 px)
+│   └── plan-2og.jpg        Gebäudeplan (1139 × 1349 px)
 ├── context-export.json     Vollständiger Projekt-Kontext für Übergabe/KI
 └── README.md               Diese Datei
 ```
@@ -296,7 +296,7 @@ app.js          Haupt-Controller
 - **localStorage-Limit:** Ca. 5 MB — bei sehr vielen Plätzen regelmäßig exportieren.
 - **Kein Touch/Mobile-Support** — die App ist für Desktop ausgelegt.
 - **Floorplan-Dimensionen:** 1139 × 1349 px. Die Pixel-Koordinaten der Plätze beziehen sich auf dieses Bild.
-- Bei Austausch des Floorplan-Bildes (`floorplan/JobRad-2OG.jpg`) müssen die Platz-Koordinaten ggf. neu angepasst werden.
+- Bei Austausch des Floorplan-Bildes (`floorplan/plan-2og.jpg`) müssen die Platz-Koordinaten ggf. neu angepasst werden.
 
 ---
 

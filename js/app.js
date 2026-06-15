@@ -470,14 +470,14 @@
      DATA TAB  (export / import / filter / search / reset)
      ══════════════════════════════════════════════════════════ */
   function loadDefault() {
-    if (typeof JOBRAD_2OG_STATE === 'undefined') {
+    if (typeof SEED_2OG_STATE === 'undefined') {
       return toast('Standard-Plan nicht verfügbar.', 'error');
     }
     confirm(
       'Standard-Plan laden',
-      'Aktuelle Plätze, Räume und Teams werden durch den JobRad 2. OG ersetzt. Fortfahren?',
+      'Aktuelle Plätze, Räume und Teams werden durch den Standard-Plan ersetzt. Fortfahren?',
       () => {
-        const def = JSON.parse(JSON.stringify(JOBRAD_2OG_STATE));
+        const def = JSON.parse(JSON.stringify(SEED_2OG_STATE));
         setState({ ...DEFAULT_STATE, ...def });
         resetZoom();
         toast('Standard-Plan geladen.', 'success');
@@ -486,7 +486,7 @@
   }
 
   function initDataTab() {
-    // Load default JobRad 2.OG plan (seats + teamspaces)
+    // Load default plan (seats + teamspaces)
     document.getElementById('btn-load-default').addEventListener('click', loadDefault);
 
     // Export
@@ -731,16 +731,25 @@
   /* ══════════════════════════════════════════════════════════
      BOOT
      ══════════════════════════════════════════════════════════ */
+  function revealBranding() {
+    // Brand assets carry no src until here (post-login), so they are never
+    // fetched on the public lock screen — only after a successful unlock.
+    document.querySelectorAll('img[data-src]').forEach(img => {
+      if (img.dataset.src) img.src = img.dataset.src;
+    });
+  }
+
   function boot() {
-    // Load persisted state — or seed the JobRad 2.OG default map on first run
+    revealBranding();
+    // Load persisted state — or seed the default map on first run
     const saved = Storage.load();
     if (saved) {
       _state = { ...DEFAULT_STATE, ...saved };
       _zoom  = saved.view?.zoom ?? 1;
       _panX  = saved.view?.panX ?? 0;
       _panY  = saved.view?.panY ?? 0;
-    } else if (typeof JOBRAD_2OG_STATE !== 'undefined') {
-      _state = { ...DEFAULT_STATE, ...JSON.parse(JSON.stringify(JOBRAD_2OG_STATE)) };
+    } else if (typeof SEED_2OG_STATE !== 'undefined') {
+      _state = { ...DEFAULT_STATE, ...JSON.parse(JSON.stringify(SEED_2OG_STATE)) };
       _zoom  = _state.view?.zoom ?? 1;
       _panX  = _state.view?.panX ?? 0;
       _panY  = _state.view?.panY ?? 0;

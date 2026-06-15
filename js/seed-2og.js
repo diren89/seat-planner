@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
-   seed-jobrad2og.js  –  Default-Karte: JobRad Campus Nord, 2. OG
+   seed-2og.js  –  Default-Karte: Campus Nord, 2. OG
    ---------------------------------------------------------------
-   Aus dem Gebäudeplan floorplan/JobRad-2OG.jpg automatisch
+   Aus dem Gebäudeplan floorplan/plan-2og.jpg automatisch
    extrahierte Desk-Positionen (Bildkoordinaten, 1139×1349).
    82 Arbeitsplätze, gruppiert nach Raum (room-Feld).
    Status bewusst durchgängig "free" (Neuplanung).
@@ -10,7 +10,7 @@
    Wird in app.js als Default geladen, wenn localStorage leer ist.
    ═══════════════════════════════════════════════════════════════ */
 
-const JOBRAD_2OG_STATE = {
+const SEED_2OG_STATE = {
   seats: [
     { id: "jr2-02",  x:  232, y: 1169, label: "2-02",  teamId: null, status: "free", type: "fixed", shareFactor: 1, room: "TS8"           },
     { id: "jr2-03",  x:  232, y: 1214, label: "2-03",  teamId: null, status: "free", type: "fixed", shareFactor: 1, room: "TS8"           },
@@ -112,7 +112,7 @@ const JOBRAD_2OG_STATE = {
   const ROOM_COLOR = '#b1e571';
 
   const byRoom = {};
-  for (const s of JOBRAD_2OG_STATE.seats) {
+  for (const s of SEED_2OG_STATE.seats) {
     if (!s.room) continue;
     (byRoom[s.room] = byRoom[s.room] || []).push(s);
   }
@@ -151,5 +151,5 @@ const JOBRAD_2OG_STATE = {
       rooms.push({ id: 'jrts-' + (n++), kind: 'room', x, y, w, h, label: room, color: ROOM_COLOR });
     }
   }
-  JOBRAD_2OG_STATE.elements = rooms;
+  SEED_2OG_STATE.elements = rooms;
 })();
