@@ -15,6 +15,12 @@
       <span class="header-title">Sitzplatz-Planungsassistent &mdash; 2. OG</span>
     </div>
     <div class="header-right">
+      <div class="presence" id="presence" style="display:none;">
+        <span class="presence-status" id="presence-status" title="Live verbunden"></span>
+        <div class="presence-list" id="presence-list"></div>
+        <button id="btn-share" class="btn btn-icon" title="Plan-Link teilen">&#128279;</button>
+        <button id="btn-name" class="btn btn-icon" title="Anzeigename ändern">&#128100;</button>
+      </div>
       <button id="btn-undo" class="btn btn-icon" title="Rückgängig (Strg+Z)">&#8630;</button>
       <button id="btn-zoom-in"  class="btn btn-icon" title="Reinzoomen (+)">+</button>
       <button id="btn-zoom-out" class="btn btn-icon" title="Rauszoomen (-)">&#8722;</button>
@@ -31,6 +37,7 @@
         <div class="plan-stage" id="plan-stage">
           <img src="floorplan/JobRad-2OG.jpg" alt="Gebäudeplan 2. OG" id="floorplan-img" draggable="false" />
           <svg id="plan-overlay" width="1139" height="1349" viewBox="0 0 1139 1349"></svg>
+          <div class="peer-layer" id="peer-layer"></div>
           <div class="lasso" id="lasso"></div>
         </div>
       </div>
@@ -302,13 +309,33 @@
     </div>
   </div>
 
+  <!-- Anzeigename-Modal (Live-Collaboration) -->
+  <div class="modal-backdrop" id="modal-name" style="display:none;">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3>Dein Anzeigename</h3>
+        <button class="modal-close" data-modal="modal-name">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Name<input type="text" id="modal-name-input" maxlength="32" placeholder="z.B. Alex" /></label>
+        <p class="hint">So sehen dich Kolleg:innen live im Plan.</p>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-name-save" class="btn btn-primary">Übernehmen</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-container" id="toast-container"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/collab-config.js"></script>
   <script src="js/seed-jobrad2og.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/teams.js"></script>
   <script src="js/seats.js"></script>
   <script src="js/elements.js"></script>
+  <script src="js/collab.js"></script>
   <script src="js/stats.js"></script>
   <script src="js/app.js"></script>
 </body>

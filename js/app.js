@@ -19,6 +19,7 @@
   let _state = { ...DEFAULT_STATE };
   let _undoStack = [];
   const UNDO_LIMIT = 30;
+  let _applyingRemote = false;   // true while applying a peer's state (no re-broadcast)
 
   function getState()       { return _state; }
   function setState(next, skipUndo = false) {
@@ -29,6 +30,24 @@
     _state = next;
     Storage.save(_state);
     refresh();
+    if (!_applyingRemote && typeof Collab !== 'undefined' && Collab.enabled) {
+      Collab.broadcastState(_state);
+    }
+  }
+
+  /* Apply a plan state received from a collaborator (keep our local view). */
+  function applyRemoteState(remote) {
+    _applyingRemote = true;
+    _state = {
+      ...DEFAULT_STATE,
+      seats:    remote.seats    || [],
+      teams:    remote.teams    || [],
+      elements: remote.elements || [],
+      view:     _state.view
+    };
+    Storage.save(_state);
+    refresh();
+    _applyingRemote = false;
   }
 
   function undo() {
@@ -36,6 +55,7 @@
     _state = JSON.parse(_undoStack.pop());
     Storage.save(_state);
     refresh(true);
+    if (typeof Collab !== 'undefined' && Collab.enabled) Collab.broadcastState(_state);
     toast('Rückgängig gemacht.', 'success');
   }
 
@@ -352,6 +372,12 @@
     const assignCount   = document.getElementById('assign-count');
     if (assignActions) assignActions.style.display = hasSeats ? 'flex' : 'none';
     if (assignCount)   assignCount.textContent = ids.length;
+
+    // Share current selection with collaborators
+    if (typeof Collab !== 'undefined' && Collab.enabled) {
+      const el = Elements.getSelectedId();
+      Collab.setSelection(el ? [...ids, el] : ids);
+    }
   }
 
   function initToolbar() {
@@ -568,6 +594,141 @@
   }
 
   /* ══════════════════════════════════════════════════════════
+     LIVE COLLABORATION  (Supabase) — identity, peers, cursors
+     ══════════════════════════════════════════════════════════ */
+  const PEER_COLORS = ['#e6582b','#1f9d8f','#7b5bd6','#d6457f','#2f7de1','#e0962a','#0e9f5a','#b4459e'];
+  let _peers = [];
+
+  function escAttr(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function initials(name) {
+    const parts = String(name).trim().split(/\s+/).filter(Boolean);
+    return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase();
+  }
+
+  function getIdentity() {
+    let id = localStorage.getItem('collab_id');
+    if (!id) { id = 'u' + Math.random().toString(36).slice(2, 9); localStorage.setItem('collab_id', id); }
+    let color = localStorage.getItem('collab_color');
+    if (!color) { color = PEER_COLORS[Math.floor(Math.random() * PEER_COLORS.length)]; localStorage.setItem('collab_color', color); }
+    const name = localStorage.getItem('collab_name') || ('Gast-' + id.slice(1, 4));
+    return { id, name, color };
+  }
+
+  function getRoomId() {
+    const p = new URLSearchParams(location.search).get('room');
+    return (p && p.trim()) || 'jobrad-2og';
+  }
+
+  function initCollab() {
+    if (typeof Collab === 'undefined' || !window.COLLAB_CONFIG) return;
+    const ident = getIdentity();
+    const ok = Collab.init({
+      roomId: getRoomId(),
+      user: ident,
+      getState,
+      applyRemoteState,
+      onPeers: (peers) => { _peers = peers; renderPeers(); }
+    });
+    if (!ok) return;
+
+    document.getElementById('presence').style.display = 'flex';
+
+    // Broadcast our cursor (image coordinates) while moving over the plan
+    const stage = document.getElementById('plan-stage');
+    document.getElementById('plan-viewport').addEventListener('mousemove', e => {
+      const rect = stage.getBoundingClientRect();
+      Collab.sendCursor((e.clientX - rect.left) / _zoom, (e.clientY - rect.top) / _zoom);
+    });
+
+    document.getElementById('btn-share').addEventListener('click', shareLink);
+    document.getElementById('btn-name').addEventListener('click', openNameModal);
+    document.getElementById('modal-name-save').addEventListener('click', saveNameModal);
+    document.getElementById('modal-name-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') saveNameModal();
+    });
+
+    // First-ever visit → ask for a display name
+    if (!localStorage.getItem('collab_name')) openNameModal();
+
+    renderPeers();
+  }
+
+  function shareLink() {
+    const url = location.origin + location.pathname + '?room=' + encodeURIComponent(Collab.roomId);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(
+        () => toast('Plan-Link kopiert.', 'success'),
+        () => toast(url, '')
+      );
+    } else { toast(url, ''); }
+  }
+
+  function openNameModal() {
+    const inp = document.getElementById('modal-name-input');
+    inp.value = localStorage.getItem('collab_name') || '';
+    document.getElementById('modal-name').style.display = 'flex';
+    requestAnimationFrame(() => { inp.focus(); inp.select(); });
+  }
+  function saveNameModal() {
+    const name = document.getElementById('modal-name-input').value.trim() || 'Gast';
+    localStorage.setItem('collab_name', name);
+    if (typeof Collab !== 'undefined') Collab.setName(name);
+    document.getElementById('modal-name').style.display = 'none';
+    renderPeers();
+    toast('Name gesetzt: ' + name, 'success');
+  }
+
+  /* Position of a seat/element in image coordinates (for peer overlays) */
+  function entityPos(id) {
+    const s = Seats.getAll().find(x => x.id === id);
+    if (s) return { x: s.x, y: s.y, r: 22 };
+    const el = Elements.get(id);
+    if (!el) return null;
+    if (el.kind === 'room') return { x: el.x, y: el.y, w: el.w, h: el.h, rect: true };
+    if (el.kind === 'wall') return { x: (el.x1 + el.x2) / 2, y: (el.y1 + el.y2) / 2, r: 18 };
+    return { x: el.x, y: el.y, r: 22 };
+  }
+
+  function renderPeers() {
+    // Presence list (self first, then peers)
+    const list = document.getElementById('presence-list');
+    if (list) {
+      const me = getIdentity();
+      let h = `<span class="presence-avatar is-me" style="background:${me.color}" title="${escAttr(me.name)} (du)">${escAttr(initials(me.name))}</span>`;
+      h += _peers.map(p =>
+        `<span class="presence-avatar" style="background:${p.color}" title="${escAttr(p.name)}">${escAttr(initials(p.name))}</span>`
+      ).join('');
+      list.innerHTML = h;
+    }
+
+    // Peer cursors + selections in the (transform-scaled) peer layer
+    const layer = document.getElementById('peer-layer');
+    if (!layer) return;
+    let html = '';
+    for (const p of _peers) {
+      for (const id of (p.selection || [])) {
+        const pos = entityPos(id);
+        if (!pos) continue;
+        if (pos.rect) {
+          html += `<div class="peer-selection" style="left:${pos.x}px;top:${pos.y}px;width:${pos.w}px;height:${pos.h}px;border-color:${p.color}"></div>`;
+        } else {
+          const r = pos.r || 20, d = r * 2;
+          html += `<div class="peer-selection" style="left:${pos.x - r}px;top:${pos.y - r}px;width:${d}px;height:${d}px;border-color:${p.color};border-radius:50%"></div>`;
+        }
+      }
+      if (p.cursor) {
+        html += `<div class="peer-cursor" style="left:${p.cursor.x}px;top:${p.cursor.y}px">`
+              + `<svg viewBox="0 0 16 16" width="20" height="20"><path d="M1 1 L1 13 L4.6 9.4 L7.1 15 L9.2 14 L6.7 8.6 L11.5 8.6 Z" fill="${p.color}" stroke="#fff" stroke-width="1"/></svg>`
+              + `<span class="peer-label" style="background:${p.color}">${escAttr(p.name)}</span></div>`;
+      }
+    }
+    layer.innerHTML = html;
+  }
+
+  /* ══════════════════════════════════════════════════════════
      BOOT
      ══════════════════════════════════════════════════════════ */
   function boot() {
@@ -640,6 +801,9 @@
     // First render
     applyTransform();
     refresh();
+
+    // Live collaboration (no-op if Supabase config/SDK unavailable)
+    initCollab();
 
     console.info('[SeatPlanner] Ready.');
   }
