@@ -244,8 +244,8 @@
         btn.classList.add('active');
         document.getElementById(btn.dataset.tab)?.classList.add('active');
 
-        // Drawing tools live in the Grundriss tab — reset to select elsewhere
-        if (btn.dataset.tab !== 'tab-layout' && _tool !== 'select') setTool('select');
+        // Drawing tools live in the Planer tab — reset to select elsewhere
+        if (btn.dataset.tab !== 'tab-planer' && _tool !== 'select') setTool('select');
 
         // Refresh stats when switching to that tab
         if (btn.dataset.tab === 'tab-stats') Stats.render();
@@ -443,7 +443,26 @@
   /* ══════════════════════════════════════════════════════════
      DATA TAB  (export / import / filter / search / reset)
      ══════════════════════════════════════════════════════════ */
+  function loadDefault() {
+    if (typeof JOBRAD_2OG_STATE === 'undefined') {
+      return toast('Standard-Plan nicht verfügbar.', 'error');
+    }
+    confirm(
+      'Standard-Plan laden',
+      'Aktuelle Plätze, Räume und Teams werden durch den JobRad 2. OG ersetzt. Fortfahren?',
+      () => {
+        const def = JSON.parse(JSON.stringify(JOBRAD_2OG_STATE));
+        setState({ ...DEFAULT_STATE, ...def });
+        resetZoom();
+        toast('Standard-Plan geladen.', 'success');
+      }
+    );
+  }
+
   function initDataTab() {
+    // Load default JobRad 2.OG plan (seats + teamspaces)
+    document.getElementById('btn-load-default').addEventListener('click', loadDefault);
+
     // Export
     document.getElementById('btn-export').addEventListener('click', () => {
       Storage.exportJSON(_state);

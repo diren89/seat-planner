@@ -99,3 +99,57 @@ const JOBRAD_2OG_STATE = {
   elements: [],
   view: { zoom: 1, panX: 0, panY: 0 }
 };
+
+/* ───────────────────────────────────────────────────────────────
+   Teamspaces (TS) als beschriftete Raum-Rechtecke ableiten.
+   Pro room-Label werden die Plätze in räumliche Cluster gruppiert
+   (TS9 ist im Plan auf zwei Bereiche verteilt → zwei Rechtecke).
+   Jedes Cluster ergibt eine Bounding-Box der Seat-Zentren + Padding.
+   ─────────────────────────────────────────────────────────────── */
+(() => {
+  const PAD = 30;          // Platzhalbgröße (17) + Rand
+  const NEAR = 200;        // Cluster-Schwelle (px)
+  const ROOM_COLOR = '#b1e571';
+
+  const byRoom = {};
+  for (const s of JOBRAD_2OG_STATE.seats) {
+    if (!s.room) continue;
+    (byRoom[s.room] = byRoom[s.room] || []).push(s);
+  }
+
+  function cluster(seats) {
+    const groups = [];
+    for (const s of seats) {
+      let g = groups.find(grp => grp.some(o =>
+        Math.abs(o.x - s.x) <= NEAR && Math.abs(o.y - s.y) <= NEAR));
+      if (g) g.push(s); else groups.push([s]);
+    }
+    // zwei Durchläufe, damit transitive Nähe Cluster verschmilzt
+    let merged = true;
+    while (merged) {
+      merged = false;
+      outer:
+      for (let i = 0; i < groups.length; i++)
+        for (let j = i + 1; j < groups.length; j++)
+          if (groups[i].some(a => groups[j].some(b =>
+                Math.abs(a.x - b.x) <= NEAR && Math.abs(a.y - b.y) <= NEAR))) {
+            groups[i] = groups[i].concat(groups.splice(j, 1)[0]);
+            merged = true; break outer;
+          }
+    }
+    return groups;
+  }
+
+  const rooms = [];
+  let n = 0;
+  for (const room of Object.keys(byRoom)) {
+    for (const grp of cluster(byRoom[room])) {
+      const xs = grp.map(s => s.x), ys = grp.map(s => s.y);
+      const x = Math.min(...xs) - PAD, y = Math.min(...ys) - PAD;
+      const w = Math.max(...xs) - Math.min(...xs) + 2 * PAD;
+      const h = Math.max(...ys) - Math.min(...ys) + 2 * PAD;
+      rooms.push({ id: 'jrts-' + (n++), kind: 'room', x, y, w, h, label: room, color: ROOM_COLOR });
+    }
+  }
+  JOBRAD_2OG_STATE.elements = rooms;
+})();

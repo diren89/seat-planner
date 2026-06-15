@@ -743,9 +743,9 @@ select:focus-visible {
 /* ── Tool palette ──────────────────────────────────────────────── */
 .tool-palette { display: flex; gap: 4px; flex-shrink: 0; }
 
-/* In the Grundriss tab the palette stacks vertically, full width */
-#tab-layout .tool-palette { flex-direction: column; gap: 6px; }
-#tab-layout .tool-btn { width: 100%; text-align: left; padding: 8px 12px; font-size: 13px; }
+/* In the Planer tab the palette stacks vertically, full width */
+#tab-planer .tool-palette { flex-direction: column; gap: 6px; }
+#tab-planer .tool-btn { width: 100%; text-align: left; padding: 8px 12px; font-size: 13px; }
 
 .tool-btn {
   font-size: 11px;

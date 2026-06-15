@@ -48,15 +48,14 @@
     <aside class="sidebar" id="sidebar">
 
       <nav class="tab-nav">
-        <button class="tab-btn active" data-tab="tab-layout">Grundriss</button>
-        <button class="tab-btn" data-tab="tab-raster">Raster</button>
-        <button class="tab-btn" data-tab="tab-teams">Teams</button>
+        <button class="tab-btn active" data-tab="tab-teams">Teams</button>
         <button class="tab-btn" data-tab="tab-stats">Statistik</button>
+        <button class="tab-btn" data-tab="tab-planer">Planer</button>
         <button class="tab-btn" data-tab="tab-data">Daten</button>
       </nav>
 
-      <!-- ── TAB: GRUNDRISS ───────────────────────── -->
-      <section class="tab-panel active" id="tab-layout">
+      <!-- ── TAB: PLANER (Grundriss + Raster) ─────── -->
+      <section class="tab-panel" id="tab-planer">
         <h3>Werkzeuge</h3>
         <div class="tool-palette" id="tool-palette">
           <button class="tool-btn active" data-tool="select" title="Auswählen / Verschieben / Größe ändern">▣ Auswählen</button>
@@ -73,10 +72,9 @@
         <div id="element-detail" class="seat-detail">
           <p class="muted">Kein Element ausgewählt.</p>
         </div>
-      </section>
 
-      <!-- ── TAB: RASTER ──────────────────────────── -->
-      <section class="tab-panel" id="tab-raster">
+        <hr />
+
         <h3>Raster generieren</h3>
         <div class="form-grid">
           <label>Spalten<input type="number" id="grid-cols" value="8" min="1" max="30" /></label>
@@ -100,7 +98,7 @@
       </section>
 
       <!-- ── TAB: TEAMS ───────────────────────────── -->
-      <section class="tab-panel" id="tab-teams">
+      <section class="tab-panel active" id="tab-teams">
         <h3>Teams verwalten</h3>
         <div class="form-inline-col">
           <div class="form-row">
@@ -144,6 +142,11 @@
 
       <!-- ── TAB: DATEN ────────────────────────────── -->
       <section class="tab-panel" id="tab-data">
+        <h3>Standard-Plan</h3>
+        <button id="btn-load-default" class="btn btn-primary btn-block">Standard-Plan laden</button>
+        <p class="hint">Lädt den JobRad 2.&nbsp;OG: alle Arbeitsplätze (2-02 … 2-94) und Teamspaces (TS1 … TS10, Hinterrad 2).</p>
+
+        <hr />
         <h3>Speichern &amp; Laden</h3>
         <div class="data-actions">
           <button id="btn-export" class="btn btn-primary btn-block">Export als JSON</button>
