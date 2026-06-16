@@ -132,15 +132,72 @@
   function initZoomPan() {
     const viewport = document.getElementById('plan-viewport');
 
-    // Wheel zoom
+    // Wheel: Figma/Maps style.
+    //   ctrl/meta (touchpad pinch or Cmd+wheel) → smooth zoom to cursor
+    //   plain two-finger scroll                 → pan
     viewport.addEventListener('wheel', e => {
       e.preventDefault();
       const rect = viewport.getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
-      const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
-      setZoom(_zoom + delta, cx, cy);
+      const k  = e.deltaMode === 1 ? 16 : 1;   // normalize line-mode deltas
+      if (e.ctrlKey || e.metaKey) {
+        // Clamp per-event exponent so a coarse mouse notch can't jump too far;
+        // touchpad pinch sends tiny deltas → stays smooth.
+        const exp = Math.max(-0.3, Math.min(0.3, -e.deltaY * k * 0.01));
+        setZoom(_zoom * Math.exp(exp), cx, cy);
+      } else {
+        _panX -= e.deltaX * k;
+        _panY -= e.deltaY * k;
+        applyTransform();
+      }
     }, { passive: false });
+
+    // Touchscreen gestures: 1 finger = pan, 2 fingers = pinch-zoom.
+    // Only touch pointers — mouse keeps the mousedown/move/up handlers below.
+    const _touchPts = new Map();   // pointerId -> { x, y }
+    let _pinchDist = 0;            // last 2-finger distance
+    function _twoPts() {
+      const it = _touchPts.values();
+      return [it.next().value, it.next().value];
+    }
+    viewport.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'touch') return;
+      _touchPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      try { viewport.setPointerCapture(e.pointerId); } catch (_) {}
+      if (_touchPts.size === 2) {
+        const [a, b] = _twoPts();
+        _pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+      }
+    });
+    viewport.addEventListener('pointermove', e => {
+      if (e.pointerType !== 'touch' || !_touchPts.has(e.pointerId)) return;
+      e.preventDefault();
+      const prev = _touchPts.get(e.pointerId);
+      _touchPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (_touchPts.size === 1) {
+        _panX += e.clientX - prev.x;
+        _panY += e.clientY - prev.y;
+        applyTransform();
+      } else if (_touchPts.size === 2) {
+        const [a, b] = _twoPts();
+        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+        if (_pinchDist > 0 && dist > 0) {
+          const rect = viewport.getBoundingClientRect();
+          const midX = (a.x + b.x) / 2 - rect.left;
+          const midY = (a.y + b.y) / 2 - rect.top;
+          setZoom(_zoom * (dist / _pinchDist), midX, midY);
+        }
+        _pinchDist = dist;
+      }
+    });
+    function _endPointer(e) {
+      if (e.pointerType !== 'touch') return;
+      _touchPts.delete(e.pointerId);
+      if (_touchPts.size < 2) _pinchDist = 0;
+    }
+    viewport.addEventListener('pointerup', _endPointer);
+    viewport.addEventListener('pointercancel', _endPointer);
 
     // Middle-mouse or Space+drag pan
     viewport.addEventListener('mousedown', e => {

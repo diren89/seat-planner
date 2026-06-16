@@ -172,6 +172,8 @@ html, body {
   cursor: default;
   user-select: none;          /* never highlight the plan on (double-)click/drag */
   -webkit-user-select: none;
+  touch-action: none;         /* we handle pan/pinch ourselves (pointer events) */
+  overscroll-behavior: contain;
 }
 
 .plan-stage {
