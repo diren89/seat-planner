@@ -183,7 +183,7 @@
       if (e.key === '-')                setZoom(_zoom - ZOOM_STEP);
       if (e.key === '0')               resetZoom();
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
-      if (e.key === 'Escape')          { Seats.clearSelection(); Elements.clearSelection(); }
+      if (e.key === 'Escape')          { Seats.clearSelection(); Elements.clearSelection(); Seats.setHighlightTeam(''); refresh(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault();
         Seats.selectMany(Seats.getAll().map(s => s.id));
@@ -431,11 +431,21 @@
       if (e.key === 'Enter') document.getElementById('btn-add-team').click();
     });
 
-    // Team list events (edit / delete) via delegation
-    document.getElementById('team-list').addEventListener('click', e => {
-      const editBtn   = e.target.closest('.btn-team-edit');
-      const deleteBtn = e.target.closest('.btn-team-delete');
-      if (editBtn)   Teams.openEditModal(editBtn.dataset.id);
+    // Add section divider
+    document.getElementById('btn-add-section').addEventListener('click', () => {
+      Teams.addSection();
+      toast('Abschnitt eingefügt.', 'success');
+    });
+
+    const teamList = document.getElementById('team-list');
+
+    // Team list events (edit / delete / section-delete / highlight) via delegation
+    teamList.addEventListener('click', e => {
+      const editBtn    = e.target.closest('.btn-team-edit');
+      const deleteBtn  = e.target.closest('.btn-team-delete');
+      const sectionDel = e.target.closest('.btn-section-delete');
+      const nameEl     = e.target.closest('.team-name');
+      if (editBtn) { Teams.openEditModal(editBtn.dataset.id); return; }
       if (deleteBtn) {
         const team = Teams.getTeam(deleteBtn.dataset.id);
         if (!team) return;
@@ -444,7 +454,74 @@
           `Team "${team.name}" und alle Zuweisungen löschen?`,
           () => { Teams.deleteTeam(deleteBtn.dataset.id); toast('Team gelöscht.'); }
         );
+        return;
       }
+      if (sectionDel) { Teams.deleteItem(sectionDel.dataset.id); return; }
+      if (nameEl) {
+        // Highlight this team's assigned seats on the plan (toggle)
+        const id = nameEl.closest('.team-item').dataset.id;
+        Seats.setHighlightTeam(id);
+        refresh();
+      }
+    });
+
+    // Rename a section divider inline (double-click)
+    teamList.addEventListener('dblclick', e => {
+      const nameEl = e.target.closest('.section-name');
+      if (!nameEl) return;
+      const id = nameEl.closest('.team-section').dataset.id;
+      const current = nameEl.textContent;
+      nameEl.contentEditable = 'true';
+      nameEl.focus();
+      document.getSelection().selectAllChildren(nameEl);
+      const finish = (save) => {
+        nameEl.contentEditable = 'false';
+        nameEl.removeEventListener('blur', onBlur);
+        nameEl.removeEventListener('keydown', onKey);
+        const val = nameEl.textContent.trim();
+        if (save && val && val !== current) Teams.renameItem(id, val);
+        else refresh();
+      };
+      const onBlur = () => finish(true);
+      const onKey = (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); finish(true); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); finish(false); }
+      };
+      nameEl.addEventListener('blur', onBlur);
+      nameEl.addEventListener('keydown', onKey);
+    });
+
+    // Drag & drop reordering of teams + sections (delegated; HTML5 native DnD)
+    let _dragId = null;
+    teamList.addEventListener('dragstart', e => {
+      const li = e.target.closest('[data-id]');
+      if (!li) return;
+      _dragId = li.dataset.id;
+      e.dataTransfer.effectAllowed = 'move';
+      li.classList.add('dragging');
+    });
+    teamList.addEventListener('dragend', e => {
+      _dragId = null;
+      teamList.querySelectorAll('.dragging, .drag-over-before, .drag-over-after')
+        .forEach(el => el.classList.remove('dragging', 'drag-over-before', 'drag-over-after'));
+    });
+    teamList.addEventListener('dragover', e => {
+      if (!_dragId) return;
+      const li = e.target.closest('[data-id]');
+      if (!li || li.dataset.id === _dragId) return;
+      e.preventDefault();
+      const before = (e.clientY - li.getBoundingClientRect().top) < li.offsetHeight / 2;
+      teamList.querySelectorAll('.drag-over-before, .drag-over-after')
+        .forEach(el => el.classList.remove('drag-over-before', 'drag-over-after'));
+      li.classList.add(before ? 'drag-over-before' : 'drag-over-after');
+    });
+    teamList.addEventListener('drop', e => {
+      if (!_dragId) return;
+      const li = e.target.closest('[data-id]');
+      if (!li || li.dataset.id === _dragId) return;
+      e.preventDefault();
+      const before = (e.clientY - li.getBoundingClientRect().top) < li.offsetHeight / 2;
+      Teams.reorder(_dragId, li.dataset.id, before);
     });
 
     // Assign selected seats to team
@@ -791,6 +868,7 @@
       if (_tool === 'select' && onEmpty) {
         Seats.clearSelection();
         Elements.clearSelection();
+        Seats.setHighlightTeam('');
       }
     });
 

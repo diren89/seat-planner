@@ -56,11 +56,64 @@ const Teams = (() => {
   }
 
   function getTeam(id) {
-    return _getState().teams.find(t => t.id === id) || null;
+    return _getState().teams.find(t => t.id === id && t.kind !== 'section') || null;
   }
 
+  /** Real teams only (sections filtered out) — used by all team logic. */
   function getAll() {
+    return _getState().teams.filter(t => t.kind !== 'section');
+  }
+
+  /** Full ordered list incl. section dividers — used for the list UI + reorder. */
+  function getItems() {
     return _getState().teams;
+  }
+
+  /* ── Sections (dividers stored inline in the teams array) ──── */
+  function addSection(name) {
+    const state = _getState();
+    const section = { id: 'S' + Math.random().toString(36).slice(2, 9), kind: 'section', name: (name || 'Neuer Abschnitt').trim() };
+    _setState({ ...state, teams: [...state.teams, section] });
+    _onChange('section-added', section);
+    return section;
+  }
+
+  /** Rename a team or a section by id. */
+  function renameItem(id, name) {
+    const state = _getState();
+    const nm = (name || '').trim();
+    if (!nm) return;
+    _setState({ ...state, teams: state.teams.map(t => t.id === id ? { ...t, name: nm } : t) });
+    _onChange('item-renamed', id);
+  }
+
+  /** Delete a team or section by id (teams also get unassigned from seats). */
+  function deleteItem(id) {
+    const state = _getState();
+    const item = state.teams.find(t => t.id === id);
+    if (!item) return;
+    if (item.kind === 'section') {
+      _setState({ ...state, teams: state.teams.filter(t => t.id !== id) });
+    } else {
+      const seats = state.seats.map(s => s.teamId === id ? { ...s, teamId: null } : s);
+      _setState({ ...state, teams: state.teams.filter(t => t.id !== id), seats });
+    }
+    _onChange('item-deleted', id);
+  }
+
+  /** Move item `draggedId` to just before/after `targetId` in the ordered array. */
+  function reorder(draggedId, targetId, before) {
+    if (draggedId === targetId) return;
+    const state = _getState();
+    const arr = [...state.teams];
+    const from = arr.findIndex(t => t.id === draggedId);
+    if (from === -1) return;
+    const [moved] = arr.splice(from, 1);
+    let to = arr.findIndex(t => t.id === targetId);
+    if (to === -1) { arr.push(moved); }
+    else { arr.splice(before ? to : to + 1, 0, moved); }
+    _setState({ ...state, teams: arr });
+    _onChange('teams-reordered', draggedId);
   }
 
   /* ── Assign seats to team ─────────────────────────────────── */
@@ -77,7 +130,7 @@ const Teams = (() => {
   function renderList() {
     const list = document.getElementById('team-list');
     if (!list) return;
-    const teams = getAll();
+    const items = getItems();
     const seats = _getState().seats;
 
     // Highlight the teams assigned to the currently selected room
@@ -86,16 +139,28 @@ const Teams = (() => {
       const el = Elements.get(Elements.getSelectedId());
       if (el && el.kind === 'room') (el.teamIds || []).forEach(id => hi.add(id));
     }
+    // Team whose seats are currently highlighted on the plan
+    const hlTeam = (typeof Seats !== 'undefined' && Seats.getHighlightTeam) ? Seats.getHighlightTeam() : '';
 
-    list.innerHTML = teams.length
-      ? teams.map(t => {
+    list.innerHTML = items.length
+      ? items.map(t => {
+          if (t.kind === 'section') {
+            return `
+            <li class="team-section" draggable="true" data-id="${t.id}">
+              <span class="drag-handle" title="Ziehen zum Sortieren">&#10303;</span>
+              <span class="section-name">${escHtml(t.name)}</span>
+              <button class="btn-section-delete" data-id="${t.id}" title="Abschnitt löschen">&times;</button>
+            </li>`;
+          }
           const count    = seats.filter(s => s.teamId === t.id).length;
           const demand   = t.demand || 0;
           const demandTxt = demand > 0 ? `${count}/${demand}` : `${count}`;
+          const cls = 'team-item' + (hi.has(t.id) ? ' room-team' : '') + (t.id === hlTeam ? ' seats-highlighted' : '');
           return `
-            <li class="team-item${hi.has(t.id) ? ' room-team' : ''}" data-id="${t.id}">
+            <li class="${cls}" draggable="true" data-id="${t.id}">
+              <span class="drag-handle" title="Ziehen zum Sortieren">&#10303;</span>
               <span class="team-swatch" style="background:${t.color};"></span>
-              <span class="team-name">${escHtml(t.name)}</span>
+              <span class="team-name" title="Zugewiesene Plätze markieren">${escHtml(t.name)}</span>
               <span class="team-meta">${demandTxt} Plätze</span>
               <div class="team-actions">
                 <button class="btn-team-edit" data-id="${t.id}" title="Bearbeiten">&#9998;</button>
@@ -157,6 +222,7 @@ const Teams = (() => {
   return {
     init,
     addTeam, updateTeam, deleteTeam, getTeam, getAll,
+    getItems, addSection, renameItem, deleteItem, reorder,
     assignSeats,
     renderList, renderAssignSelect,
     openEditModal, saveEditModal

@@ -9,7 +9,7 @@
     'use strict';
     var HASH = 'b34cd8e49aa0ba1d30841d6f4c4f7a8b4c779ea2dd07252d7c4fe6e67a3cf697';
     // Bump on every deploy so returning browsers never run stale cached code.
-    var APP_VERSION = '20260615-3';
+    var APP_VERSION = '20260616-1';
     var SCRIPTS = [
       'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
       'js/collab-config.js',
@@ -84,7 +84,7 @@
     });
   })();
   </script>
-  <link rel="stylesheet" href="css/style.css?v=20260615-3" />
+  <link rel="stylesheet" href="css/style.css?v=20260616-1" />
   <style>
   #lock-screen {
     position: fixed; inset: 0; background: #29363c;
@@ -251,6 +251,7 @@
           </div>
           <input type="number" id="team-demand-input" placeholder="Bedarf (Anzahl Plätze)" min="0" />
           <button id="btn-add-team" class="btn btn-primary btn-block">Team hinzufügen</button>
+          <button id="btn-add-section" class="btn btn-block">Abschnitt einfügen</button>
         </div>
 
         <ul class="team-list" id="team-list"></ul>

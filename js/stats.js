@@ -21,7 +21,8 @@ const Stats = (() => {
   }
 
   function compute() {
-    const { seats, teams } = _getState();
+    const { seats } = _getState();
+    const teams = (typeof Teams !== 'undefined') ? Teams.getAll() : (_getState().teams || []);
 
     const total     = seats.length;
     const occupied  = seats.filter(s => s.status === 'occupied').length;

@@ -16,6 +16,7 @@ const Seats = (() => {
   let _filterTeam  = '';
   let _filterStatus = '';
   let _filterRoom = '';
+  let _highlightTeamId = '';   // team whose seats are highlighted via the team list
 
   function init(getState, setState, onChange, getTool) {
     _getState  = getState;
@@ -122,6 +123,12 @@ const Seats = (() => {
 
   function getSelectedIds() { return _selectedIds; }
 
+  /* ── Team highlight (toggle from the team list) ───────────── */
+  function setHighlightTeam(teamId) {
+    _highlightTeamId = (_highlightTeamId === teamId) ? '' : (teamId || '');
+  }
+  function getHighlightTeam() { return _highlightTeamId; }
+
   /* ── Filter ───────────────────────────────────────────────── */
   function setFilter(teamId, status, room) {
     _filterTeam   = teamId   || '';
@@ -150,7 +157,7 @@ const Seats = (() => {
     if (!stage) return;
 
     const seats  = getAll();
-    const teams  = _getState().teams || [];
+    const teams  = (typeof Teams !== 'undefined') ? Teams.getAll() : (_getState().teams || []);
     const teamMap = Object.fromEntries(teams.map(t => [t.id, t]));
     const hasFilter = !!(_filterTeam || _filterStatus || _filterRoom);
 
@@ -204,6 +211,9 @@ const Seats = (() => {
 
       // Selected
       el.classList.toggle('selected', _selectedIds.includes(seat.id));
+
+      // Team highlight (click on a team name in the list)
+      el.classList.toggle('team-highlight', !!_highlightTeamId && seat.teamId === _highlightTeamId);
 
       // Filter dimming
       if (hasFilter) {
@@ -480,6 +490,7 @@ const Seats = (() => {
     addSeat, updateSeat, deleteSeats, getAll,
     generateGrid,
     select, selectMany, clearSelection, getSelectedIds,
+    setHighlightTeam, getHighlightTeam,
     setFilter, clearFilter,
     render, renderDetailPanel,
     initDragHandlers, initLasso,

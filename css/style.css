@@ -549,6 +549,52 @@ select:focus-visible {
 .detail-teams { display: flex; flex-wrap: wrap; gap: 4px 8px; justify-content: flex-end; }
 .detail-teams .team-chip { display: inline-flex; align-items: center; gap: 5px; }
 
+/* Team name acts as a button (highlight assigned seats) */
+.team-item .team-name { cursor: pointer; }
+.team-item.seats-highlighted {
+  outline: 2px solid #e0a200;
+  outline-offset: -2px;
+}
+
+/* Drag handle + drag state */
+.drag-handle { cursor: grab; color: var(--text-muted); font-size: 13px; flex-shrink: 0; user-select: none; }
+.team-item.dragging, .team-section.dragging { opacity: .45; }
+.team-item.drag-over-before, .team-section.drag-over-before { box-shadow: inset 0 3px 0 var(--accent); }
+.team-item.drag-over-after,  .team-section.drag-over-after  { box-shadow: inset 0 -3px 0 var(--accent); }
+
+/* Section divider row */
+.team-section {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; margin-top: 4px;
+  border-top: 2px solid var(--border);
+  background: transparent;
+}
+.team-section .section-name {
+  flex: 1; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.team-section .section-name[contenteditable="true"] {
+  outline: 2px solid var(--accent); border-radius: var(--radius-sm);
+  padding: 1px 4px; color: var(--text); background: var(--surface);
+  text-transform: none; cursor: text;
+}
+.btn-section-delete {
+  width: 22px; height: 22px; padding: 0; font-size: 13px;
+  border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: transparent; cursor: pointer; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.btn-section-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+/* Seats highlighted via a team-name click — distinct gold mark (vs white selection) */
+.seat.team-highlight {
+  outline: 3px solid #ffcc00;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(255, 204, 0, .35);
+  z-index: 19;
+}
+
 .assign-actions { display: flex; flex-direction: column; gap: 6px; }
 
 /* ── Seat Detail Panel ─────────────────────────────────────────── */
