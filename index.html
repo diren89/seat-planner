@@ -8,6 +8,8 @@
   (function () {
     'use strict';
     var HASH = 'b34cd8e49aa0ba1d30841d6f4c4f7a8b4c779ea2dd07252d7c4fe6e67a3cf697';
+    // Bump on every deploy so returning browsers never run stale cached code.
+    var APP_VERSION = '20260615-3';
     var SCRIPTS = [
       'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
       'js/collab-config.js',
@@ -24,7 +26,8 @@
     function loadScripts(list) {
       if (!list.length) return;
       var s = document.createElement('script');
-      s.src = list[0];
+      // Version-bust local files (the CDN URL is already version-pinned).
+      s.src = list[0].indexOf('js/') === 0 ? list[0] + '?v=' + APP_VERSION : list[0];
       s.onload  = function () { loadScripts(list.slice(1)); };
       s.onerror = function () { loadScripts(list.slice(1)); };
       document.head.appendChild(s);
@@ -81,7 +84,7 @@
     });
   })();
   </script>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=20260615-3" />
   <style>
   #lock-screen {
     position: fixed; inset: 0; background: #29363c;
@@ -407,6 +410,8 @@
         <div class="el-fields" id="el-room-fields" style="display:none;">
           <label>Bezeichnung<input type="text" id="modal-el-room-label" maxlength="40" /></label>
           <label>Farbe<input type="color" id="modal-el-room-color" value="#b1e571" /></label>
+          <label>Teams</label>
+          <div class="el-team-picker" id="modal-el-room-teams"></div>
         </div>
         <div class="el-fields" id="el-wall-fields" style="display:none;">
           <label>Wandstärke (px)<input type="number" id="modal-el-wall-thick" min="1" max="40" value="6" /></label>

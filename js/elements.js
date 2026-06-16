@@ -43,7 +43,7 @@ const Elements = (() => {
 
   function addRoom(x, y, w, h) {
     const el = { id: uid(), kind: 'room', x: Math.round(x), y: Math.round(y),
-                 w: Math.round(w), h: Math.round(h), label: 'Raum', color: ROOM_COLOR };
+                 w: Math.round(w), h: Math.round(h), label: 'Raum', color: ROOM_COLOR, teamIds: [] };
     _commit([...getAll(), el]);
     selectElement(el.id);
     return el;
@@ -428,6 +428,22 @@ const Elements = (() => {
   /* ── Bearbeiten-Modal ─────────────────────────────────────── */
   let _editingId = null;
 
+  /* Build the multi-select team checkbox list inside the room modal */
+  function _renderTeamPicker(selectedIds) {
+    const box = document.getElementById('modal-el-room-teams');
+    if (!box) return;
+    const teams = (typeof Teams !== 'undefined') ? Teams.getAll() : [];
+    const sel = new Set(selectedIds || []);
+    box.innerHTML = teams.length
+      ? teams.map(t => `
+          <label class="team-pick">
+            <input type="checkbox" value="${t.id}"${sel.has(t.id) ? ' checked' : ''} />
+            <span class="team-swatch" style="background:${t.color};"></span>
+            <span class="team-pick-name">${_esc(t.name)}</span>
+          </label>`).join('')
+      : '<p class="muted">Noch keine Teams angelegt.</p>';
+  }
+
   function openElementModal(id) {
     const el = get(id);
     if (!el) return;
@@ -441,6 +457,7 @@ const Elements = (() => {
       document.getElementById('el-room-fields').style.display = 'block';
       document.getElementById('modal-el-room-label').value = el.label || '';
       document.getElementById('modal-el-room-color').value = el.color || ROOM_COLOR;
+      _renderTeamPicker(el.teamIds || []);
     } else if (el.kind === 'wall') {
       title.textContent = 'Wand bearbeiten';
       document.getElementById('el-wall-fields').style.display = 'block';
@@ -458,9 +475,12 @@ const Elements = (() => {
     const el = get(_editingId);
     if (!el) return;
     if (el.kind === 'room') {
+      const teamIds = [...document.querySelectorAll('#modal-el-room-teams input[type="checkbox"]:checked')]
+        .map(cb => cb.value);
       updateElement(el.id, {
         label: document.getElementById('modal-el-room-label').value.trim(),
-        color: document.getElementById('modal-el-room-color').value
+        color: document.getElementById('modal-el-room-color').value,
+        teamIds
       });
     } else if (el.kind === 'wall') {
       updateElement(el.id, {
@@ -496,6 +516,12 @@ const Elements = (() => {
     if (el.kind === 'room') {
       rows += `<div class="detail-row"><span class="detail-label">Bezeichnung</span><span class="detail-value">${_esc(el.label || '—')}</span></div>`;
       rows += `<div class="detail-row"><span class="detail-label">Größe</span><span class="detail-value">${el.w} × ${el.h}</span></div>`;
+      const teams = (typeof Teams !== 'undefined') ? Teams.getAll() : [];
+      const assigned = teams.filter(t => (el.teamIds || []).includes(t.id));
+      const teamsVal = assigned.length
+        ? assigned.map(t => `<span class="team-chip"><span class="team-swatch" style="background:${t.color};"></span>${_esc(t.name)}</span>`).join('')
+        : '—';
+      rows += `<div class="detail-row"><span class="detail-label">Teams</span><span class="detail-value detail-teams">${teamsVal}</span></div>`;
     } else if (el.kind === 'wall') {
       rows += `<div class="detail-row"><span class="detail-label">Länge</span><span class="detail-value">${Math.round(Math.hypot(el.x2 - el.x1, el.y2 - el.y1))} px</span></div>`;
       rows += `<div class="detail-row"><span class="detail-label">Stärke</span><span class="detail-value">${el.thickness} px</span></div>`;

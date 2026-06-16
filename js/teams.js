@@ -80,13 +80,20 @@ const Teams = (() => {
     const teams = getAll();
     const seats = _getState().seats;
 
+    // Highlight the teams assigned to the currently selected room
+    const hi = new Set();
+    if (typeof Elements !== 'undefined') {
+      const el = Elements.get(Elements.getSelectedId());
+      if (el && el.kind === 'room') (el.teamIds || []).forEach(id => hi.add(id));
+    }
+
     list.innerHTML = teams.length
       ? teams.map(t => {
           const count    = seats.filter(s => s.teamId === t.id).length;
           const demand   = t.demand || 0;
           const demandTxt = demand > 0 ? `${count}/${demand}` : `${count}`;
           return `
-            <li class="team-item" data-id="${t.id}">
+            <li class="team-item${hi.has(t.id) ? ' room-team' : ''}" data-id="${t.id}">
               <span class="team-swatch" style="background:${t.color};"></span>
               <span class="team-name">${escHtml(t.name)}</span>
               <span class="team-meta">${demandTxt} Plätze</span>
