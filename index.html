@@ -9,7 +9,7 @@
     'use strict';
     var HASH = 'b34cd8e49aa0ba1d30841d6f4c4f7a8b4c779ea2dd07252d7c4fe6e67a3cf697';
     // Bump on every deploy so returning browsers never run stale cached code.
-    var APP_VERSION = '20260616-2';
+    var APP_VERSION = '20260616-3';
     var SCRIPTS = [
       'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
       'js/collab-config.js',
@@ -84,7 +84,7 @@
     });
   })();
   </script>
-  <link rel="stylesheet" href="css/style.css?v=20260616-2" />
+  <link rel="stylesheet" href="css/style.css?v=20260616-3" />
   <style>
   #lock-screen {
     position: fixed; inset: 0; background: #29363c;
@@ -162,6 +162,7 @@
       <button id="btn-zoom-in"  class="btn btn-icon" title="Reinzoomen (+)">+</button>
       <button id="btn-zoom-out" class="btn btn-icon" title="Rauszoomen (-)">&#8722;</button>
       <button id="btn-zoom-reset" class="btn btn-icon" title="Zoom zurücksetzen (0)">&#8635;</button>
+      <button id="btn-lock" class="btn btn-icon" title="Plan sperren (nur Ansicht)">&#128275;</button>
     </div>
   </header>
 
@@ -170,6 +171,7 @@
 
     <!-- ── FLOOR PLAN CANVAS ───────────────────────────────────── -->
     <main class="plan-wrapper" id="plan-wrapper">
+      <div class="lock-banner" id="lock-banner">&#128274; Plan gesperrt &mdash; nur Ansicht</div>
       <div class="plan-viewport" id="plan-viewport">
         <div class="plan-stage" id="plan-stage">
           <img data-src="floorplan/plan-2og.jpg" alt="Gebäudeplan 2. OG" id="floorplan-img" draggable="false" />

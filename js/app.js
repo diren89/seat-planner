@@ -13,16 +13,24 @@
     seats: [],
     teams: [],
     elements: [],
+    locked: false,
     view:  { zoom: 1, panX: 0, panY: 0 }
   };
 
   let _state = { ...DEFAULT_STATE };
   let _undoStack = [];
   const UNDO_LIMIT = 30;
+  let _settingLock = false;   // bypasses the lock-guard for the lock toggle itself
+
+  function isLocked() { return !!_state.locked; }
   let _applyingRemote = false;   // true while applying a peer's state (no re-broadcast)
 
   function getState()       { return _state; }
   function setState(next, skipUndo = false) {
+    if (_state.locked && !_applyingRemote && !_settingLock) {
+      toast('Plan ist gesperrt 🔒', 'warn');
+      return;
+    }
     if (!skipUndo) {
       _undoStack.push(JSON.stringify(_state));
       if (_undoStack.length > UNDO_LIMIT) _undoStack.shift();
@@ -43,6 +51,7 @@
       seats:    remote.seats    || [],
       teams:    remote.teams    || [],
       elements: remote.elements || [],
+      locked:   !!remote.locked,
       view:     _state.view
     };
     Storage.save(_state);
@@ -50,7 +59,24 @@
     _applyingRemote = false;
   }
 
+  /* Toggle the whole-plan lock (read-only for everyone). Bypasses the guard. */
+  function setLocked(v) {
+    _settingLock = true;
+    setState({ ..._state, locked: !!v });
+    _settingLock = false;
+    applyLockUI();
+    toast(v ? 'Plan gesperrt 🔒' : 'Plan entsperrt 🔓', 'success');
+  }
+
+  function applyLockUI() {
+    document.body.classList.toggle('app-locked', isLocked());
+    const btn = document.getElementById('btn-lock');
+    if (btn) { btn.textContent = isLocked() ? '🔒' : '🔓'; btn.title = isLocked() ? 'Plan entsperren' : 'Plan sperren (nur Ansicht)'; }
+    if (isLocked() && typeof setTool === 'function') setTool('select');
+  }
+
   function undo() {
+    if (isLocked()) return toast('Plan ist gesperrt 🔒', 'warn');
     if (_undoStack.length === 0) return toast('Nichts zum Rückgängig-Machen.', 'warn');
     _state = JSON.parse(_undoStack.pop());
     Storage.save(_state);
@@ -72,6 +98,7 @@
     Seats.renderDetailPanel();
     populateRoomFilter();
     updateSelectionUI();
+    applyLockUI();
     if (full) applyTransform();
   }
 
@@ -700,6 +727,7 @@
     document.getElementById('btn-zoom-out').addEventListener('click',   () => setZoom(_zoom - ZOOM_STEP));
     document.getElementById('btn-zoom-reset').addEventListener('click', resetZoom);
     document.getElementById('btn-undo').addEventListener('click',       undo);
+    document.getElementById('btn-lock').addEventListener('click',       () => setLocked(!isLocked()));
   }
 
   /* ══════════════════════════════════════════════════════════
