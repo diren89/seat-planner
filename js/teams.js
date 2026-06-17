@@ -101,17 +101,31 @@ const Teams = (() => {
     _onChange('item-deleted', id);
   }
 
-  /** Move item `draggedId` to just before/after `targetId` in the ordered array. */
+  /** Move item `draggedId` before/after `targetId`. Dragging a section moves
+   *  the whole block (section + its teams up to the next section). */
   function reorder(draggedId, targetId, before) {
     if (draggedId === targetId) return;
     const state = _getState();
     const arr = [...state.teams];
     const from = arr.findIndex(t => t.id === draggedId);
     if (from === -1) return;
-    const [moved] = arr.splice(from, 1);
+
+    // Block size: a section grabs its member teams until the next section.
+    let count = 1;
+    if (arr[from].kind === 'section') {
+      let j = from + 1;
+      while (j < arr.length && arr[j].kind !== 'section') j++;
+      count = j - from;
+    }
+
+    // Don't drop a block onto itself.
+    const toIdx = arr.findIndex(t => t.id === targetId);
+    if (toIdx >= from && toIdx < from + count) return;
+
+    const block = arr.splice(from, count);
     let to = arr.findIndex(t => t.id === targetId);
-    if (to === -1) { arr.push(moved); }
-    else { arr.splice(before ? to : to + 1, 0, moved); }
+    if (to === -1) { arr.push(...block); }
+    else { arr.splice(before ? to : to + 1, 0, ...block); }
     _setState({ ...state, teams: arr });
     _onChange('teams-reordered', draggedId);
   }
@@ -142,9 +156,11 @@ const Teams = (() => {
     // Team whose seats are currently highlighted on the plan
     const hlTeam = (typeof Seats !== 'undefined' && Seats.getHighlightTeam) ? Seats.getHighlightTeam() : '';
 
+    let underSection = false;   // teams after a divider are indented
     list.innerHTML = items.length
       ? items.map(t => {
           if (t.kind === 'section') {
+            underSection = true;
             return `
             <li class="team-section" draggable="true" data-id="${t.id}">
               <span class="drag-handle" title="Ziehen zum Sortieren">&#10303;</span>
@@ -155,7 +171,7 @@ const Teams = (() => {
           const count    = seats.filter(s => s.teamId === t.id).length;
           const demand   = t.demand || 0;
           const demandTxt = demand > 0 ? `${count}/${demand}` : `${count}`;
-          const cls = 'team-item' + (hi.has(t.id) ? ' room-team' : '') + (t.id === hlTeam ? ' seats-highlighted' : '');
+          const cls = 'team-item' + (underSection ? ' under-section' : '') + (hi.has(t.id) ? ' room-team' : '') + (t.id === hlTeam ? ' seats-highlighted' : '');
           return `
             <li class="${cls}" draggable="true" data-id="${t.id}">
               <span class="drag-handle" title="Ziehen zum Sortieren">&#10303;</span>

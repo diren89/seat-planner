@@ -551,6 +551,9 @@ select:focus-visible {
 .detail-teams { display: flex; flex-wrap: wrap; gap: 4px 8px; justify-content: flex-end; }
 .detail-teams .team-chip { display: inline-flex; align-items: center; gap: 5px; }
 
+/* Teams below a section divider are indented for grouping */
+.team-item.under-section { margin-left: 20px; }
+
 /* Team name acts as a button (highlight assigned seats) */
 .team-item .team-name { cursor: pointer; }
 .team-item.seats-highlighted {
