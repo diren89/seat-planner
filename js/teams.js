@@ -200,6 +200,12 @@ const Teams = (() => {
     if (filterSel) {
       filterSel.innerHTML = '<option value="">Alle Teams</option>' + opts;
     }
+    const exportSel = document.getElementById('export-team-select');
+    if (exportSel) {
+      const prev = exportSel.value;
+      exportSel.innerHTML = '<option value="">-- Team wählen --</option>' + opts;
+      if (prev) exportSel.value = prev;
+    }
   }
 
   /* ── Modal helpers ────────────────────────────────────────── */

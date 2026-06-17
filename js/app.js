@@ -656,6 +656,18 @@
       toast('Export abgeschlossen.', 'success');
     });
 
+    // Export team seat-assignment as JPG (single + batch)
+    document.getElementById('btn-export-team').addEventListener('click', async () => {
+      const id = document.getElementById('export-team-select').value;
+      if (!id) return toast('Bitte Team wählen.', 'warn');
+      await TeamExport.exportTeam(id);
+      toast('Team-Export erstellt.', 'success');
+    });
+    document.getElementById('btn-export-all-teams').addEventListener('click', async () => {
+      const n = await TeamExport.exportAll();
+      toast(n ? `${n} Team-Exporte erstellt.` : 'Keine Teams vorhanden.', n ? 'success' : 'warn');
+    });
+
     // Import
     document.getElementById('import-file').addEventListener('change', async e => {
       const file = e.target.files[0];
