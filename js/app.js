@@ -28,7 +28,7 @@
   function getState()       { return _state; }
   function setState(next, skipUndo = false) {
     if (_state.locked && !_applyingRemote && !_settingLock) {
-      toast('Plan ist gesperrt 🔒', 'warn');
+      toast('Plan ist gesperrt.', 'warn');
       return;
     }
     if (!skipUndo) {
@@ -65,18 +65,18 @@
     setState({ ..._state, locked: !!v });
     _settingLock = false;
     applyLockUI();
-    toast(v ? 'Plan gesperrt 🔒' : 'Plan entsperrt 🔓', 'success');
+    toast(v ? 'Plan gesperrt.' : 'Plan entsperrt.', 'success');
   }
 
   function applyLockUI() {
     document.body.classList.toggle('app-locked', isLocked());
     const btn = document.getElementById('btn-lock');
-    if (btn) { btn.textContent = isLocked() ? '🔒' : '🔓'; btn.title = isLocked() ? 'Plan entsperren' : 'Plan sperren (nur Ansicht)'; }
+    if (btn) { btn.innerHTML = (typeof Icons !== 'undefined') ? Icons.get(isLocked() ? 'locked' : 'unlocked') : ''; btn.title = isLocked() ? 'Plan entsperren' : 'Plan sperren (nur Ansicht)'; }
     if (isLocked() && typeof setTool === 'function') setTool('select');
   }
 
   function undo() {
-    if (isLocked()) return toast('Plan ist gesperrt 🔒', 'warn');
+    if (isLocked()) return toast('Plan ist gesperrt.', 'warn');
     if (_undoStack.length === 0) return toast('Nichts zum Rückgängig-Machen.', 'warn');
     _state = JSON.parse(_undoStack.pop());
     Storage.save(_state);
@@ -913,8 +913,16 @@
     });
   }
 
+  function fillIcons() {
+    if (typeof Icons === 'undefined') return;
+    document.querySelectorAll('[data-icon]').forEach(el => {
+      el.innerHTML = Icons.get(el.dataset.icon);
+    });
+  }
+
   function boot() {
     revealBranding();
+    fillIcons();
     // Load persisted state — or seed the default map on first run
     const saved = Storage.load();
     if (saved) {

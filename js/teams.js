@@ -163,9 +163,9 @@ const Teams = (() => {
             underSection = true;
             return `
             <li class="team-section" draggable="true" data-id="${t.id}">
-              <span class="drag-handle" title="Ziehen zum Sortieren">&#10303;</span>
+              <span class="drag-handle" title="Ziehen zum Sortieren">${Icons.get('drag')}</span>
               <span class="section-name">${escHtml(t.name)}</span>
-              <button class="btn-section-delete" data-id="${t.id}" title="Abschnitt löschen">&times;</button>
+              <button class="btn-section-delete" data-id="${t.id}" title="Abschnitt löschen">${Icons.get('trash')}</button>
             </li>`;
           }
           const count    = seats.filter(s => s.teamId === t.id).length;
@@ -174,13 +174,13 @@ const Teams = (() => {
           const cls = 'team-item' + (underSection ? ' under-section' : '') + (hi.has(t.id) ? ' room-team' : '') + (t.id === hlTeam ? ' seats-highlighted' : '');
           return `
             <li class="${cls}" draggable="true" data-id="${t.id}">
-              <span class="drag-handle" title="Ziehen zum Sortieren">&#10303;</span>
+              <span class="drag-handle" title="Ziehen zum Sortieren">${Icons.get('drag')}</span>
               <span class="team-swatch" style="background:${t.color};"></span>
               <span class="team-name" title="Zugewiesene Plätze markieren">${escHtml(t.name)}</span>
               <span class="team-meta">${demandTxt} Plätze</span>
               <div class="team-actions">
-                <button class="btn-team-edit" data-id="${t.id}" title="Bearbeiten">&#9998;</button>
-                <button class="btn-team-delete" data-id="${t.id}" title="Löschen">&times;</button>
+                <button class="btn-team-edit" data-id="${t.id}" title="Bearbeiten">${Icons.get('edit')}</button>
+                <button class="btn-team-delete" data-id="${t.id}" title="Löschen">${Icons.get('trash')}</button>
               </div>
             </li>`;
         }).join('')
