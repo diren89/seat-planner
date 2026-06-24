@@ -165,7 +165,7 @@ const Teams = (() => {
             <li class="team-section" draggable="true" data-id="${t.id}">
               <span class="drag-handle" title="Ziehen zum Sortieren">${Icons.get('drag')}</span>
               <span class="section-name">${escHtml(t.name)}</span>
-              <button class="btn-section-delete" data-id="${t.id}" title="Abschnitt löschen">${Icons.get('trash')}</button>
+              <button class="btn-section-delete" data-id="${t.id}" title="Abschnitt löschen" aria-label="Abschnitt löschen">${Icons.get('trash')}</button>
             </li>`;
           }
           const count    = seats.filter(s => s.teamId === t.id).length;
@@ -179,8 +179,8 @@ const Teams = (() => {
               <span class="team-name" title="Zugewiesene Plätze markieren">${escHtml(t.name)}</span>
               <span class="team-meta">${demandTxt} Plätze</span>
               <div class="team-actions">
-                <button class="btn-team-edit" data-id="${t.id}" title="Bearbeiten">${Icons.get('edit')}</button>
-                <button class="btn-team-delete" data-id="${t.id}" title="Löschen">${Icons.get('trash')}</button>
+                <button class="btn-team-edit" data-id="${t.id}" title="Bearbeiten" aria-label="Team bearbeiten">${Icons.get('edit')}</button>
+                <button class="btn-team-delete" data-id="${t.id}" title="Löschen" aria-label="Team löschen">${Icons.get('trash')}</button>
               </div>
             </li>`;
         }).join('')

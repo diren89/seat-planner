@@ -1046,3 +1046,37 @@ button .icon, .drag-handle .icon, .lock-banner .icon { pointer-events: none; }
 .drag-handle .icon { width: 16px; height: 16px; color: var(--text-muted); }
 .lock-banner .icon { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; fill: #fff; }
 .lock-toggle .icon { width: 18px; height: 18px; fill: currentColor; }
+
+/* ── UX pass: contrast, touch, focus, reduced-motion ────────────── */
+/* Contrast: small muted text → black-600 (~6:1) */
+.team-meta, .hint, .section-name, .seat-detail .detail-label,
+.detail-label, .muted { color: var(--color-black-600); }
+
+/* Tabular figures so counts/stats don't shift */
+.team-meta, .stat-value, .stat-num, .detail-value { font-variant-numeric: tabular-nums; }
+
+/* Touch targets: comfortable hit area for small action buttons */
+.btn-team-edit, .btn-team-delete, .btn-section-delete { min-width: 32px; min-height: 32px; }
+@media (pointer: coarse) {
+  .btn-team-edit, .btn-team-delete, .btn-section-delete,
+  .app-header .btn-icon, .drag-handle { min-width: 44px; min-height: 44px; }
+}
+
+/* Visible keyboard focus on all interactive elements */
+button:focus-visible, a:focus-visible, select:focus-visible,
+input:focus-visible, .tab-btn:focus-visible, .team-item:focus-visible,
+.seat:focus-visible {
+  outline: var(--pltn-focus-outline);
+  outline-offset: 2px;
+}
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  #lock-screen.lock-shake .lock-card { animation: none !important; }
+}

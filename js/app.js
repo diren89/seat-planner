@@ -71,7 +71,7 @@
   function applyLockUI() {
     document.body.classList.toggle('app-locked', isLocked());
     const btn = document.getElementById('btn-lock');
-    if (btn) { btn.innerHTML = (typeof Icons !== 'undefined') ? Icons.get(isLocked() ? 'locked' : 'unlocked') : ''; btn.title = isLocked() ? 'Plan entsperren' : 'Plan sperren (nur Ansicht)'; }
+    if (btn) { btn.innerHTML = (typeof Icons !== 'undefined') ? Icons.get(isLocked() ? 'locked' : 'unlocked') : ''; btn.title = isLocked() ? 'Plan entsperren' : 'Plan sperren (nur Ansicht)'; btn.setAttribute('aria-label', btn.title); }
     if (isLocked() && typeof setTool === 'function') setTool('select');
   }
 
@@ -540,7 +540,11 @@
         );
         return;
       }
-      if (sectionDel) { Teams.deleteItem(sectionDel.dataset.id); return; }
+      if (sectionDel) {
+        confirm('Abschnitt löschen', 'Abschnitt-Trenner löschen? (Teams bleiben erhalten.)',
+          () => { Teams.deleteItem(sectionDel.dataset.id); toast('Abschnitt gelöscht.'); });
+        return;
+      }
       if (nameEl) {
         // Highlight this team's assigned seats on the plan (toggle)
         const id = nameEl.closest('.team-item').dataset.id;
@@ -824,8 +828,8 @@
       if (e.key === 'Enter') saveNameModal();
     });
 
-    // First-ever visit → ask for a display name
-    if (!localStorage.getItem('collab_name')) openNameModal();
+    // Identity uses a default "Gast-…" name; user sets it via the 👤 button
+    // (no forced modal on load).
 
     renderPeers();
   }
@@ -917,6 +921,7 @@
     if (typeof Icons === 'undefined') return;
     document.querySelectorAll('[data-icon]').forEach(el => {
       el.innerHTML = Icons.get(el.dataset.icon);
+      if (!el.getAttribute('aria-label') && el.title) el.setAttribute('aria-label', el.title);
     });
   }
 
