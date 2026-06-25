@@ -1080,3 +1080,44 @@ input:focus-visible, .tab-btn:focus-visible, .team-item:focus-visible,
   }
   #lock-screen.lock-shake .lock-card { animation: none !important; }
 }
+
+/* ── Responsive sidebar drawer (<900px) ─────────────────────────── */
+#btn-drawer, #btn-drawer-close { display: none; }   /* desktop: hidden */
+.sidebar-scrim { display: none; }
+
+@media (max-width: 900px) {
+  #btn-drawer { display: inline-flex; }
+
+  .sidebar {
+    position: fixed;
+    top: var(--header-h); right: 0; bottom: 0;
+    width: min(340px, 86vw);
+    transform: translateX(100%);
+    transition: transform .25s ease;
+    z-index: 90;
+    box-shadow: -4px 0 16px rgba(0,0,0,.18);
+    border-left: 1px solid var(--border);
+  }
+  #sidebar.open { transform: translateX(0); }
+
+  .sidebar-scrim {
+    display: block;
+    position: fixed; inset: var(--header-h) 0 0 0;
+    background: rgba(0,0,0,.45);
+    z-index: 80;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .sidebar-scrim.open { opacity: 1; pointer-events: auto; }
+
+  /* close button inside the drawer */
+  #btn-drawer-close {
+    display: inline-flex;
+    position: absolute; top: 6px; right: 8px; z-index: 2;
+    border-color: var(--border); color: var(--text-muted);
+  }
+  .tab-nav { padding-right: 44px; }   /* room for the close button */
+
+  /* declutter header on narrow screens (pinch/keys still zoom) */
+  #btn-zoom-in, #btn-zoom-out, #btn-zoom-reset { display: none; }
+}

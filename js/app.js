@@ -267,7 +267,7 @@
       if (e.key === '-')                setZoom(_zoom - ZOOM_STEP);
       if (e.key === '0')               resetZoom();
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
-      if (e.key === 'Escape')          { Seats.clearSelection(); Elements.clearSelection(); Seats.setHighlightTeam(''); refresh(); }
+      if (e.key === 'Escape')          { setDrawer(false); Seats.clearSelection(); Elements.clearSelection(); Seats.setHighlightTeam(''); refresh(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault();
         Seats.selectMany(Seats.getAll().map(s => s.id));
@@ -917,6 +917,27 @@
     });
   }
 
+  /* ── Responsive sidebar drawer (<900px) ──────────────────── */
+  function setDrawer(open) {
+    const sb = document.getElementById('sidebar');
+    const scrim = document.getElementById('sidebar-scrim');
+    const btn = document.getElementById('btn-drawer');
+    if (sb) sb.classList.toggle('open', open);
+    if (scrim) scrim.classList.toggle('open', open);
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function toggleDrawer() {
+    const sb = document.getElementById('sidebar');
+    setDrawer(!(sb && sb.classList.contains('open')));
+  }
+  function initDrawer() {
+    document.getElementById('btn-drawer').addEventListener('click', toggleDrawer);
+    document.getElementById('btn-drawer-close').addEventListener('click', () => setDrawer(false));
+    document.getElementById('sidebar-scrim').addEventListener('click', () => setDrawer(false));
+    // Reset drawer state when growing back to desktop width
+    matchMedia('(min-width: 901px)').addEventListener('change', e => { if (e.matches) setDrawer(false); });
+  }
+
   function fillIcons() {
     if (typeof Icons === 'undefined') return;
     document.querySelectorAll('[data-icon]').forEach(el => {
@@ -993,6 +1014,7 @@
     initStatsTab();
     initDataTab();
     initHeaderButtons();
+    initDrawer();
     initKeyboard();
 
     // First render
