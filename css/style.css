@@ -214,9 +214,12 @@ html, body {
 .seat:hover { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 2px 8px rgba(0,0,0,.3); }
 
 .seat.selected {
-  outline: 3px solid #fff;
-  outline-offset: 1px;
-  box-shadow: 0 0 0 4px var(--primary), 0 2px 8px rgba(0,0,0,.3);
+  outline: none;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 5px #2f80ff,
+    0 2px 10px rgba(0,0,0,.45);
+  transform: translate(-50%, -50%) scale(1.12);
   z-index: 20;
 }
 
@@ -594,11 +597,16 @@ select:focus-visible {
 
 /* Seats highlighted via a team-name click — distinct gold mark (vs white selection) */
 .seat.team-highlight {
-  outline: 3px solid #ffcc00;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 6px rgba(255, 204, 0, .35);
+  outline: none;
+  box-shadow:
+    0 0 0 2px #1a1a1a,
+    0 0 0 5px #ffcc00,
+    0 0 0 8px rgba(255, 204, 0, .5);
   z-index: 19;
 }
+
+/* Other seats faded while a team is focused (still clickable, unlike .dimmed) */
+.seat.team-faded { opacity: .22; transition: opacity .15s; }
 
 .assign-actions { display: flex; flex-direction: column; gap: 6px; }
 

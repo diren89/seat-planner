@@ -215,13 +215,17 @@ const Seats = (() => {
       // Team highlight (click on a team name in the list)
       el.classList.toggle('team-highlight', !!_highlightTeamId && seat.teamId === _highlightTeamId);
 
-      // Filter dimming
+      // Filter dimming / team focus fade
       if (hasFilter) {
         const passes = passesFilter(seat);
         el.classList.toggle('dimmed',      !passes);
         el.classList.toggle('highlighted',  passes);
-      } else {
+        el.classList.remove('team-faded');
+      } else if (_highlightTeamId) {
+        el.classList.toggle('team-faded', seat.teamId !== _highlightTeamId);
         el.classList.remove('dimmed', 'highlighted');
+      } else {
+        el.classList.remove('dimmed', 'highlighted', 'team-faded');
       }
     }
   }
