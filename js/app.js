@@ -267,7 +267,7 @@
       if (e.key === '-')                setZoom(_zoom - ZOOM_STEP);
       if (e.key === '0')               resetZoom();
       if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
-      if (e.key === 'Escape')          { setDrawer(false); Seats.clearSelection(); Elements.clearSelection(); Seats.setHighlightTeam(''); refresh(); }
+      if (e.key === 'Escape')          { document.getElementById('modal-help').style.display = 'none'; setDrawer(false); Seats.clearSelection(); Elements.clearSelection(); Seats.setHighlightTeam(''); refresh(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault();
         Seats.selectMany(Seats.getAll().map(s => s.id));
@@ -290,7 +290,7 @@
   let _tool = 'select';
 
   const TOOL_HINTS = {
-    select: 'Klick = auswählen · Ziehen (leer) = Lasso · Doppelklick = bearbeiten · Handles = Größe ändern',
+    select: 'Klick = auswählen · Doppelklick = bearbeiten',
     room:   'Ziehen = Raum aufziehen · Alt = frei (kein Raster)',
     wall:   'Ziehen = Wand · rastet auf 0/45/90° · Alt = frei',
     door:   'Klick = Tür platzieren · danach drehen/bearbeiten im Auswählen-Modus',
@@ -473,6 +473,31 @@
       Teams.assignSeats(ids, null);
       toast('Zuweisung aufgehoben.');
     });
+
+    document.getElementById('btn-help').addEventListener('click', () => {
+      document.getElementById('modal-help').style.display = 'flex';
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     CANVAS LEGEND  (collapsible, state persisted)
+     ══════════════════════════════════════════════════════════ */
+  function initLegend() {
+    const legend = document.getElementById('plan-legend');
+    const toggle = document.getElementById('legend-toggle');
+    if (!legend || !toggle) return;
+
+    // Default: collapsed on narrow screens or when previously collapsed
+    const stored = localStorage.getItem('legend_collapsed');
+    const collapsed = stored !== null ? stored === '1' : matchMedia('(max-width: 900px)').matches;
+    legend.classList.toggle('collapsed', collapsed);
+    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+
+    toggle.addEventListener('click', () => {
+      const c = legend.classList.toggle('collapsed');
+      toggle.setAttribute('aria-expanded', c ? 'false' : 'true');
+      localStorage.setItem('legend_collapsed', c ? '1' : '0');
+    });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -625,14 +650,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     STATS TAB
-     ══════════════════════════════════════════════════════════ */
-  function initStatsTab() {
-    document.getElementById('btn-refresh-stats').addEventListener('click', () => Stats.render());
-  }
-
-  /* ══════════════════════════════════════════════════════════
-     DATA TAB  (export / import / filter / search / reset)
+     DATA TAB  (export / import / filter / reset)
      ══════════════════════════════════════════════════════════ */
   function loadDefault() {
     if (typeof SEED_2OG_STATE === 'undefined') {
@@ -705,19 +723,6 @@
     document.getElementById('filter-team-select').addEventListener('change',   applyFilter);
     document.getElementById('filter-status-select').addEventListener('change',  applyFilter);
     document.getElementById('filter-room-select').addEventListener('change',    applyFilter);
-
-    // Search & jump
-    document.getElementById('btn-search').addEventListener('click', doSearch);
-    document.getElementById('search-seat').addEventListener('keydown', e => {
-      if (e.key === 'Enter') doSearch();
-    });
-
-    function doSearch() {
-      const q = document.getElementById('search-seat').value;
-      if (!q) return;
-      const found = Seats.jumpToSeat(q, getZoom, setPan);
-      if (!found) toast(`Platz "${q}" nicht gefunden.`, 'warn');
-    }
 
     // Reset
     document.getElementById('btn-reset-all').addEventListener('click', () => {
@@ -1011,11 +1016,12 @@
     initToolbar();
     initRasterTab();
     initTeamsTab();
-    initStatsTab();
     initDataTab();
     initHeaderButtons();
     initDrawer();
     initKeyboard();
+    initLegend();
+    Search.init({ getZoom, setPan, refresh });
 
     // First render
     applyTransform();

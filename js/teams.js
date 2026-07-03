@@ -170,14 +170,18 @@ const Teams = (() => {
           }
           const count    = seats.filter(s => s.teamId === t.id).length;
           const demand   = t.demand || 0;
-          const demandTxt = demand > 0 ? `${count}/${demand}` : `${count}`;
+          // Demand coloring: red + explicit shortfall when under, green when met
+          let demandTxt = demand > 0 ? `${count}/${demand}` : `${count}`;
+          let demandCls = '';
+          if (demand > 0 && count < demand) { demandCls = ' demand-under'; demandTxt += ` · fehlt ${demand - count}`; }
+          else if (demand > 0)              { demandCls = ' demand-met'; }
           const cls = 'team-item' + (underSection ? ' under-section' : '') + (hi.has(t.id) ? ' room-team' : '') + (t.id === hlTeam ? ' seats-highlighted' : '');
           return `
             <li class="${cls}" draggable="true" data-id="${t.id}">
               <span class="drag-handle" title="Ziehen zum Sortieren">${Icons.get('drag')}</span>
               <span class="team-swatch" style="background:${t.color};"></span>
               <span class="team-name" title="Zugewiesene Plätze markieren">${escHtml(t.name)}</span>
-              <span class="team-meta">${demandTxt} Plätze</span>
+              <span class="team-meta${demandCls}">${demandTxt} Plätze</span>
               <div class="team-actions">
                 <button class="btn-team-edit" data-id="${t.id}" title="Bearbeiten" aria-label="Team bearbeiten">${Icons.get('edit')}</button>
                 <button class="btn-team-delete" data-id="${t.id}" title="Löschen" aria-label="Team löschen">${Icons.get('trash')}</button>

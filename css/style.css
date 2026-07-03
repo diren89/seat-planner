@@ -163,6 +163,7 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   background: var(--bg);
+  position: relative;   /* anchor for floating zoom controls + legend */
 }
 
 .plan-viewport {
@@ -1126,6 +1127,235 @@ input:focus-visible, .tab-btn:focus-visible, .team-item:focus-visible,
   }
   .tab-nav { padding-right: 44px; }   /* room for the close button */
 
-  /* declutter header on narrow screens (pinch/keys still zoom) */
-  #btn-zoom-in, #btn-zoom-out, #btn-zoom-reset { display: none; }
+  /* declutter toolbar on narrow screens (search covers filtering needs) */
+  .toolbar-filters { display: none; }
+  .toolbar-hint { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   UX pass 2: global search, toolbar filters, canvas legend,
+   floating zoom controls, help modal, demand coloring, collapsible
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Global search (header) ─────────────────────────────────────── */
+.global-search {
+  position: relative;
+  flex: 1;
+  max-width: 320px;
+  margin: 0 16px;
+  display: flex;
+  align-items: center;
+}
+.global-search-icon {
+  position: absolute; left: 10px;
+  display: flex; pointer-events: none;
+}
+.global-search-icon .icon { width: 14px; height: 14px; fill: rgba(255,255,255,.55); }
+#global-search-input {
+  width: 100%;
+  height: 30px;
+  padding: 0 12px 0 32px;
+  border-radius: 128px;
+  border: 1px solid rgba(255,255,255,.28);
+  background: rgba(255,255,255,.10);
+  color: #fff;
+  font-size: 12px;
+  outline: none;
+  transition: border-color .15s, background .15s;
+}
+#global-search-input::placeholder { color: rgba(255,255,255,.45); }
+#global-search-input:focus { border-color: var(--accent); background: rgba(255,255,255,.16); }
+#global-search-results {
+  position: absolute;
+  top: calc(100% + 6px); left: 0; right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,.22);
+  list-style: none;
+  margin: 0; padding: 4px;
+  z-index: 110;
+  max-height: 320px;
+  overflow-y: auto;
+}
+#global-search-results li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+#global-search-results li:hover,
+#global-search-results li[aria-selected="true"] { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+#global-search-results li .icon { width: 14px; height: 14px; fill: var(--text-muted); flex-shrink: 0; }
+#global-search-results .result-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+#global-search-results .result-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#global-search-results .result-type {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  color: var(--text-muted); letter-spacing: .04em; flex-shrink: 0;
+}
+#global-search-results .muted { padding: 8px 10px; font-size: 12px; }
+
+/* ── Toolbar filters ────────────────────────────────────────────── */
+.toolbar-filters { display: flex; gap: 6px; flex-shrink: 0; }
+.toolbar-filters select {
+  max-width: 130px;
+  height: 28px;
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+/* ── Floating zoom controls (bottom-right on canvas) ────────────── */
+.zoom-controls {
+  position: absolute;
+  right: 12px;
+  bottom: calc(var(--toolbar-h) + 12px);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.zoom-controls .btn-icon {
+  width: 40px; height: 40px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+}
+.zoom-controls .btn-icon + .btn-icon { border-top: 1px solid var(--border); }
+.zoom-controls .btn-icon:hover { background: var(--surface2); }
+
+/* ── Canvas legend (bottom-left, collapsible) ───────────────────── */
+.plan-legend {
+  position: absolute;
+  left: 12px;
+  bottom: calc(var(--toolbar-h) + 12px);
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+}
+.legend-toggle {
+  width: 32px; height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+.legend-toggle .icon { width: 16px; height: 16px; }
+.legend-toggle:hover { color: var(--text); }
+.legend-body {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 8px 12px;
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.plan-legend.collapsed .legend-body { display: none; }
+.legend-row { display: flex; align-items: center; gap: 6px; }
+.legend-chip {
+  width: 12px; height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,.25);
+  flex-shrink: 0;
+}
+.chip-free     { background: var(--seat-free); }
+.chip-occupied { background: var(--seat-occupied); }
+.chip-reserved { background: var(--seat-reserved); }
+.chip-blocked  {
+  background: var(--seat-blocked);
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,.25) 2px, rgba(255,255,255,.25) 4px);
+}
+.chip-teamborder { background: var(--surface); border: 2px solid #4f86c6; }
+.legend-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 14px; height: 14px; padding: 0 3px;
+  background: var(--anthrazit); color: #fff;
+  border-radius: 7px; font-size: 8px; font-weight: 800;
+}
+.legend-badge.badge-pink { background: var(--pink); color: var(--ink); }
+.legend-note { color: var(--text-muted); }
+
+/* ── Help modal ─────────────────────────────────────────────────── */
+.help-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.help-grid h4 { font-size: 12px; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.help-list { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12px; }
+.help-list dt {
+  font-weight: 700;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--anthrazit);
+}
+.help-list dd { color: var(--text-muted); margin: 0; }
+@media (max-width: 640px) { .help-grid { grid-template-columns: 1fr; } }
+
+/* ── Demand coloring (team list + stats) ────────────────────────── */
+.team-meta.demand-under, .stats-row .demand-under { color: var(--danger); font-weight: 700; }
+.team-meta.demand-met,   .stats-row .demand-met   { color: var(--color-green-500); }
+
+/* ── Collapsible section (Raster generieren) ────────────────────── */
+.collapse-section summary {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--anthrazit);
+  cursor: pointer;
+  padding: 4px 0;
+  list-style: none;
+  display: flex; align-items: center; gap: 6px;
+}
+.collapse-section summary::-webkit-details-marker { display: none; }
+.collapse-section summary::before {
+  content: "";
+  width: 0; height: 0;
+  border-left: 5px solid var(--text-muted);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform .15s;
+}
+.collapse-section[open] summary::before { transform: rotate(90deg); }
+.collapse-section > *:not(summary) { margin-top: 8px; }
+
+/* ── Tool palette icons ─────────────────────────────────────────── */
+.tool-btn .icon { width: 16px; height: 16px; margin-right: 8px; vertical-align: -3px; }
+.tool-btn span[data-icon] { display: inline-flex; }
+
+/* ── Narrow header: search takes priority ───────────────────────── */
+@media (max-width: 640px) {
+  .header-title { display: none; }
+  .global-search { margin: 0 8px; max-width: none; }
+}
+
+/* Re-assert (base .toolbar-filters rule above is declared after the drawer
+   media query and would win otherwise) */
+@media (max-width: 900px) {
+  .toolbar-filters { display: none; }
+}
+
+/* Very narrow header: free space for the search field */
+@media (max-width: 640px) {
+  #btn-share, #btn-name { display: none; }   /* rare actions; desktop has them */
+}
+@media (max-width: 480px) {
+  .header-logo { display: none; }
 }

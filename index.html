@@ -12,7 +12,7 @@
     var EYE     = '<svg class="icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M30.94,15.66A16.69,16.69,0,0,0,16,5,16.69,16.69,0,0,0,1.06,15.66a1,1,0,0,0,0,.68A16.69,16.69,0,0,0,16,27,16.69,16.69,0,0,0,30.94,16.34,1,1,0,0,0,30.94,15.66ZM16,25c-5.3,0-10.9-3.93-12.93-9C5.1,10.93,10.7,7,16,7s10.9,3.93,12.93,9C26.9,21.07,21.3,25,16,25Z"/><path d="M16,10a6,6,0,1,0,6,6A6,6,0,0,0,16,10Zm0,10a4,4,0,1,1,4-4A4,4,0,0,1,16,20Z"/></svg>';
     var EYE_OFF = '<svg class="icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M5.24,22.51l1.43-1.42A14.06,14.06,0,0,1,3.07,16C5.1,10.93,10.7,7,16,7a12.38,12.38,0,0,1,4,.72l1.55-1.56A14.72,14.72,0,0,0,16,5,16.69,16.69,0,0,0,1.06,15.66a1,1,0,0,0,0,.68A16,16,0,0,0,5.24,22.51Z"/><path d="M12,15.73a4,4,0,0,1,3.7-3.7l1.81-1.82a6,6,0,0,0-7.33,7.33Z"/><path d="M30.94,15.66A16.4,16.4,0,0,0,25.2,8.22L30,3.41,28.59,2,2,28.59,3.41,30l5.1-5.1A15.29,15.29,0,0,0,16,27,16.69,16.69,0,0,0,30.94,16.34,1,1,0,0,0,30.94,15.66ZM20,16a4,4,0,0,1-6,3.44L19.44,14A4,4,0,0,1,20,16Zm-4,9a13.05,13.05,0,0,1-6-1.58l2.54-2.54a6,6,0,0,0,8.35-8.35l2.87-2.87A14.54,14.54,0,0,1,28.93,16C26.9,21.07,21.3,25,16,25Z"/></svg>';
     // Bump on every deploy so returning browsers never run stale cached code.
-    var APP_VERSION = '20260617-6';
+    var APP_VERSION = '20260618-1';
     var SCRIPTS = [
       'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
       'js/collab-config.js',
@@ -25,6 +25,7 @@
       'js/collab.js',
       'js/stats.js',
       'js/teamexport.js',
+      'js/search.js',
       'js/app.js'
     ];
 
@@ -91,7 +92,7 @@
     });
   })();
   </script>
-  <link rel="stylesheet" href="css/style.css?v=20260617-6" />
+  <link rel="stylesheet" href="css/style.css?v=20260618-1" />
   <style>
   #lock-screen {
     position: fixed; inset: 0; background: #29363c;
@@ -158,6 +159,11 @@
       <img class="header-logo" data-src="assets/brand-mark.svg" alt="" />
       <span class="header-title">Sitzplatz-Planungsassistent &mdash; 2. OG</span>
     </div>
+    <div class="global-search" id="global-search">
+      <span class="global-search-icon" data-icon="search"></span>
+      <input id="global-search-input" type="search" placeholder="Suchen&hellip; (Platz, Team, Raum)" aria-label="Suchen" autocomplete="off" />
+      <ul id="global-search-results" role="listbox" hidden></ul>
+    </div>
     <div class="header-right">
       <button id="btn-drawer" class="btn btn-icon" title="Menü" aria-label="Menü" aria-expanded="false" data-icon="menu"></button>
       <div class="presence" id="presence" style="display:none;">
@@ -167,9 +173,6 @@
         <button id="btn-name" class="btn btn-icon" title="Anzeigename ändern" data-icon="user"></button>
       </div>
       <button id="btn-undo" class="btn btn-icon" title="Rückgängig (Strg+Z)" data-icon="undo"></button>
-      <button id="btn-zoom-in"  class="btn btn-icon" title="Reinzoomen (+)" data-icon="zoom-in"></button>
-      <button id="btn-zoom-out" class="btn btn-icon" title="Rauszoomen (-)" data-icon="zoom-out"></button>
-      <button id="btn-zoom-reset" class="btn btn-icon" title="Zoom zurücksetzen (0)" data-icon="reset"></button>
       <button id="btn-lock" class="btn btn-icon" title="Plan sperren (nur Ansicht)"></button>
     </div>
   </header>
@@ -189,9 +192,41 @@
         </div>
       </div>
 
+      <!-- Floating zoom controls (bottom-right on canvas) -->
+      <div class="zoom-controls" role="group" aria-label="Zoom">
+        <button id="btn-zoom-in"  class="btn btn-icon" title="Reinzoomen (+)" data-icon="zoom-in"></button>
+        <button id="btn-zoom-out" class="btn btn-icon" title="Rauszoomen (-)" data-icon="zoom-out"></button>
+        <button id="btn-zoom-reset" class="btn btn-icon" title="Zoom zurücksetzen (0)" data-icon="reset"></button>
+      </div>
+
+      <!-- Status legend (bottom-left on canvas, collapsible) -->
+      <div class="plan-legend" id="plan-legend">
+        <button class="legend-toggle" id="legend-toggle" title="Legende ein-/ausblenden" aria-label="Legende ein-/ausblenden" aria-expanded="true" data-icon="information"></button>
+        <div class="legend-body">
+          <div class="legend-row"><span class="legend-chip chip-free"></span> Frei</div>
+          <div class="legend-row"><span class="legend-chip chip-occupied"></span> Belegt</div>
+          <div class="legend-row"><span class="legend-chip chip-reserved"></span> Reserviert</div>
+          <div class="legend-row"><span class="legend-chip chip-blocked"></span> Blockiert</div>
+          <div class="legend-row legend-note"><span class="legend-badge">F</span> Flex &nbsp;&middot;&nbsp; <span class="legend-badge badge-pink">UW/2M/UHD</span> Monitor</div>
+          <div class="legend-row legend-note"><span class="legend-chip chip-teamborder"></span> Rahmenfarbe = Team</div>
+        </div>
+      </div>
+
       <div class="plan-toolbar">
-        <span class="toolbar-hint" id="toolbar-hint">Klick = auswählen &nbsp;|&nbsp; Strg+Klick = Mehrfachauswahl &nbsp;|&nbsp; Ziehen auf freier Fläche = Lasso &nbsp;|&nbsp; Doppelklick = bearbeiten</span>
+        <div class="toolbar-filters" aria-label="Filter">
+          <select id="filter-team-select" aria-label="Team-Filter"><option value="">Alle Teams</option></select>
+          <select id="filter-room-select" aria-label="Raum-Filter"><option value="">Alle Räume</option></select>
+          <select id="filter-status-select" aria-label="Status-Filter">
+            <option value="">Alle Status</option>
+            <option value="free">Frei</option>
+            <option value="occupied">Belegt</option>
+            <option value="reserved">Reserviert</option>
+            <option value="blocked">Blockiert</option>
+          </select>
+        </div>
+        <span class="toolbar-hint" id="toolbar-hint">Klick = auswählen &middot; Doppelklick = bearbeiten</span>
         <div class="toolbar-actions">
+          <button id="btn-help" class="btn btn-icon" title="Hilfe &amp; Tastaturkürzel" aria-label="Hilfe und Tastaturkürzel" data-icon="help"></button>
           <button id="btn-delete-selected" class="btn btn-sm btn-danger" disabled>Auswahl löschen</button>
           <button id="btn-clear-assign" class="btn btn-sm" disabled>Zuweisung aufheben</button>
         </div>
@@ -214,11 +249,11 @@
       <section class="tab-panel" id="tab-planer">
         <h3>Werkzeuge</h3>
         <div class="tool-palette" id="tool-palette">
-          <button class="tool-btn active" data-tool="select" title="Auswählen / Verschieben / Größe ändern">▣ Auswählen</button>
-          <button class="tool-btn" data-tool="room"   title="Raum aufziehen">▢ Raum</button>
-          <button class="tool-btn" data-tool="wall"   title="Trennwand ziehen">╱ Wand</button>
-          <button class="tool-btn" data-tool="door"   title="Tür platzieren">⌐ Tür</button>
-          <button class="tool-btn" data-tool="seat"   title="Arbeitsplatz setzen">● Arbeitsplatz</button>
+          <button class="tool-btn active" data-tool="select" title="Auswählen / Verschieben / Größe ändern"><span data-icon="cursor"></span>Auswählen</button>
+          <button class="tool-btn" data-tool="room"   title="Raum aufziehen"><span data-icon="area"></span>Raum</button>
+          <button class="tool-btn" data-tool="wall"   title="Trennwand ziehen"><span data-icon="ruler"></span>Wand</button>
+          <button class="tool-btn" data-tool="door"   title="Tür platzieren"><span data-icon="exit"></span>Tür</button>
+          <button class="tool-btn" data-tool="seat"   title="Arbeitsplatz setzen"><span data-icon="add-alt"></span>Arbeitsplatz</button>
         </div>
         <p class="hint">Räume, Wände &amp; Türen werden direkt im Plan gezeichnet, verschoben und in der Größe geändert.</p>
 
@@ -231,7 +266,8 @@
 
         <hr />
 
-        <h3>Raster generieren</h3>
+        <details class="collapse-section">
+        <summary>Raster generieren</summary>
         <div class="form-grid">
           <label>Spalten<input type="number" id="grid-cols" value="8" min="1" max="30" /></label>
           <label>Reihen<input type="number" id="grid-rows" value="5" min="1" max="30" /></label>
@@ -244,6 +280,7 @@
         </div>
         <button id="btn-generate-grid" class="btn btn-primary btn-block">Raster erzeugen</button>
         <p class="hint">Neue Plätze werden zu bestehenden ergänzt.</p>
+        </details>
 
         <hr />
 
@@ -294,7 +331,6 @@
         </div>
 
         <div id="stats-teams-list"></div>
-        <button id="btn-refresh-stats" class="btn btn-sm btn-block" style="margin-top:12px;">Aktualisieren</button>
       </section>
 
       <!-- ── TAB: DATEN ────────────────────────────── -->
@@ -321,28 +357,6 @@
           <button id="btn-export-team" class="btn btn-block btn-secondary">Team exportieren</button>
           <button id="btn-export-all-teams" class="btn btn-primary btn-block">Alle Teams exportieren</button>
         </div>
-
-        <hr />
-        <h3>Filter &amp; Suche</h3>
-        <label>Team-Filter
-          <select id="filter-team-select"><option value="">Alle Teams</option></select>
-        </label>
-        <label>Raum-Filter
-          <select id="filter-room-select"><option value="">Alle Räume</option></select>
-        </label>
-        <label>Status-Filter
-          <select id="filter-status-select">
-            <option value="">Alle Status</option>
-            <option value="free">Frei</option>
-            <option value="occupied">Belegt</option>
-            <option value="reserved">Reserviert</option>
-            <option value="blocked">Blockiert</option>
-          </select>
-        </label>
-        <label>Platz suchen
-          <input type="text" id="search-seat" placeholder="z.B. A3" />
-        </label>
-        <button id="btn-search" class="btn btn-sm btn-block">Suchen &amp; Springen</button>
 
         <hr />
         <h3>Zurücksetzen</h3>
@@ -484,6 +498,40 @@
       </div>
       <div class="modal-footer">
         <button id="modal-name-save" class="btn btn-primary">Übernehmen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hilfe & Tastaturkürzel -->
+  <div class="modal-backdrop" id="modal-help" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Hilfe &amp; Tastaturkürzel</h3>
+        <button class="modal-close" data-modal="modal-help" data-icon="close"></button>
+      </div>
+      <div class="modal-body help-grid">
+        <div>
+          <h4>Maus &amp; Touch</h4>
+          <dl class="help-list">
+            <dt>Klick</dt><dd>Platz/Element auswählen</dd>
+            <dt>Strg+Klick</dt><dd>Mehrfachauswahl</dd>
+            <dt>Ziehen (freie Fläche)</dt><dd>Lasso-Auswahl</dd>
+            <dt>Doppelklick</dt><dd>Bearbeiten</dd>
+            <dt>Leertaste+Ziehen</dt><dd>Plan verschieben</dd>
+            <dt>Scroll / 2 Finger</dt><dd>Plan verschieben</dd>
+            <dt>Strg+Scroll / Pinch</dt><dd>Zoomen</dd>
+          </dl>
+        </div>
+        <div>
+          <h4>Tastatur</h4>
+          <dl class="help-list">
+            <dt>+ / &minus;</dt><dd>Zoomen</dd>
+            <dt>0</dt><dd>Zoom zurücksetzen</dd>
+            <dt>Strg+Z</dt><dd>Rückgängig</dd>
+            <dt>Entf</dt><dd>Auswahl löschen</dd>
+            <dt>Esc</dt><dd>Auswahl/Hervorhebung aufheben</dd>
+          </dl>
+        </div>
       </div>
     </div>
   </div>

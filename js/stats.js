@@ -117,7 +117,7 @@ const Stats = (() => {
             <span class="stats-team-name">${escHtml(team.name)}</span>
             <span class="stats-team-badge ${badge.cls}">${badge.label}</span>
           </div>
-          <div class="stats-team-row"><span>Plätze gesamt</span><strong>${tTotal}</strong></div>
+          <div class="stats-team-row"><span>Plätze gesamt</span><strong class="${demand > 0 ? (tTotal < demand ? 'demand-under' : 'demand-met') : ''}">${tTotal}${demand > 0 ? `/${demand}` : ''}</strong></div>
           <div class="stats-team-row"><span>Belegt</span><strong>${tOccupied}</strong></div>
           <div class="stats-team-row"><span>Frei</span><strong>${tFree}</strong></div>
           <div class="stats-team-row"><span>Reserviert</span><strong>${tReserved}</strong></div>
