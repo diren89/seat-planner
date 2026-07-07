@@ -406,7 +406,7 @@ const Elements = (() => {
     viewport.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
       const tool = getTool();
-      if (tool === 'select' || tool === 'seat') return;   // select/seat anderswo behandelt
+      if (tool === 'select' || tool === 'seat' || tool === 'comment') return;   // anderswo behandelt
       // Nicht zeichnen, wenn der Druck auf einem bestehenden Element/Handle
       // beginnt — sonst kollidiert die Zeichen-Maschinerie mit dem Doppelklick
       // zum Bearbeiten. Zum Zeichnen auf freier Fläche beginnen.

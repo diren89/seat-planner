@@ -132,6 +132,7 @@
     Teams.renderAssignSelect();
     Stats.render();
     Seats.renderDetailPanel();
+    Comments.render();
     populateRoomFilter();
     populateFloorSelect();
     renderFloorsPanel();
@@ -491,7 +492,8 @@
     room:   'Ziehen = Raum aufziehen · Alt = frei (kein Raster)',
     wall:   'Ziehen = Wand · rastet auf 0/45/90° · Alt = frei',
     door:   'Klick = Tür platzieren · danach drehen/bearbeiten im Auswählen-Modus',
-    seat:   'Klick = Arbeitsplatz setzen'
+    seat:   'Klick = Arbeitsplatz setzen',
+    comment: 'Klick = Kommentar-Pin setzen'
   };
 
   function getTool() { return _tool; }
@@ -673,6 +675,16 @@
 
     document.getElementById('btn-help').addEventListener('click', () => {
       document.getElementById('modal-help').style.display = 'flex';
+    });
+
+    // Comment pins: modal save/delete + visibility toggle
+    document.getElementById('modal-comment-save').addEventListener('click', () => Comments.saveModal());
+    document.getElementById('modal-comment-delete').addEventListener('click', () => Comments.deleteFromModal());
+    document.getElementById('btn-toggle-comments').addEventListener('click', e => {
+      const v = !Comments.isVisible();
+      Comments.setVisible(v);
+      e.currentTarget.setAttribute('aria-pressed', v ? 'true' : 'false');
+      e.currentTarget.classList.toggle('off', !v);
     });
   }
 
@@ -1187,6 +1199,7 @@
     // Init modules
     Seats.init(getState, (next) => setState(next), onChange, getTool, getActiveFloor);
     Elements.init(getState, (next) => setState(next), onChange, getActiveFloor);
+    Comments.init(getState, (next) => setState(next), onChange, getActiveFloor);
     Teams.init(getState, (next) => setState(next), onChange);
     Stats.init(getState);
 
@@ -1214,6 +1227,15 @@
         const y = Math.round((e.clientY - rect.top)  / _zoom);
         const n = Seats.getAll().length + 1;
         Seats.addSeat(x, y, 'S' + n);
+        return;
+      }
+      if (_tool === 'comment') {
+        if (e.detail > 1 || onSeat || onHandle || t.closest('.comment-pin')) return;
+        const rect = stage.getBoundingClientRect();
+        const x = Math.round((e.clientX - rect.left) / _zoom);
+        const y = Math.round((e.clientY - rect.top)  / _zoom);
+        const c = Comments.add(x, y);
+        if (c) Comments.openModal(c.id);
         return;
       }
       if (_tool === 'select' && onEmpty) {

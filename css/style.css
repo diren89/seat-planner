@@ -1410,3 +1410,26 @@ input:focus-visible, .tab-btn:focus-visible, .team-item:focus-visible,
     var(--surface);
   outline: 1px solid var(--border);
 }
+
+/* ── Comment pins ───────────────────────────────────────────────── */
+.comment-layer { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
+.comment-pin {
+  position: absolute;
+  width: 26px; height: 26px;
+  transform: translate(-50%, -100%);
+  background: #ffcc00;
+  border: 2px solid #29363c;
+  border-radius: 50% 50% 50% 4px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+.comment-pin .icon { width: 13px; height: 13px; fill: #29363c; pointer-events: none; }
+.comment-pin:hover { transform: translate(-50%, -100%) scale(1.15); }
+.comment-pin.done { background: var(--color-black-100); opacity: .65; }
+.legend-toggle.off { opacity: .45; }
+#btn-toggle-comments { margin-left: 6px; }
+.checkbox-row { display: flex !important; flex-direction: row !important; align-items: center; gap: 8px; }
+#modal-comment-text { resize: vertical; }
+body.app-locked .comment-pin { pointer-events: none; }
