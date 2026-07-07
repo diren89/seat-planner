@@ -11,18 +11,19 @@ const Seats = (() => {
   }
 
   /* ── State ────────────────────────────────────────────────── */
-  let _getState, _setState, _onChange, _getTool;
+  let _getState, _setState, _onChange, _getTool, _getActiveFloor = () => null;
   let _selectedIds = [];
   let _filterTeam  = '';
   let _filterStatus = '';
   let _filterRoom = '';
   let _highlightTeamId = '';   // team whose seats are highlighted via the team list
 
-  function init(getState, setState, onChange, getTool) {
+  function init(getState, setState, onChange, getTool, getActiveFloor) {
     _getState  = getState;
     _setState  = setState;
     _onChange  = onChange;
     _getTool   = getTool || (() => 'select');
+    _getActiveFloor = getActiveFloor || (() => null);
   }
 
   /* ── Ausstattung (Arbeitsplatz-Equipment) ─────────────────── */
@@ -47,7 +48,8 @@ const Seats = (() => {
       shareFactor: 1.0,
       room:        '',       // optionaler Raum / Zone (z.B. "TS1", "Hinterrad 2")
       equipment:   '',       // '' | ultrawide | dual | dual-uhd
-      equipmentNote: ''      // Freitext zur Ausstattung
+      equipmentNote: '',     // Freitext zur Ausstattung
+      floorId:     _getActiveFloor() || undefined
     };
   }
 
@@ -162,6 +164,7 @@ const Seats = (() => {
     const teams  = (typeof Teams !== 'undefined') ? Teams.getAll() : (_getState().teams || []);
     const teamMap = Object.fromEntries(teams.map(t => [t.id, t]));
     const hasFilter = !!(_filterTeam || _filterStatus || _filterRoom);
+    const af = _getActiveFloor();
 
     // Remove elements for deleted seats
     for (const [id, el] of _seatEls) {
@@ -181,6 +184,9 @@ const Seats = (() => {
         _seatEls.set(seat.id, el);
         _attachSeatEvents(el);
       }
+
+      // Only the active floor is visible
+      el.style.display = (!af || !seat.floorId || seat.floorId === af) ? '' : 'none';
 
       // Position
       el.style.left = seat.x + 'px';
@@ -348,9 +354,11 @@ const Seats = (() => {
       function onUp() {
         if (!_lasso) return;
         lassoEl.style.display = 'none';
-        // Find seats inside lasso rect
+        // Find seats inside lasso rect (active floor only)
         const { x, y, w, h } = _lasso;
+        const af = _getActiveFloor();
         const inside = getAll()
+          .filter(s => !af || !s.floorId || s.floorId === af)
           .filter(s => s.x >= x && s.x <= x + w && s.y >= y && s.y <= y + h)
           .map(s => s.id);
         if (inside.length > 0) {

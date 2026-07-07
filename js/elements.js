@@ -20,16 +20,17 @@ const Elements = (() => {
   const DOOR_WIDTH  = 40;
 
   /* ── State / DI ───────────────────────────────────────────── */
-  let _getState, _setState, _onChange;
+  let _getState, _setState, _onChange, _getActiveFloor = () => null;
   let _stage, _getTransform, _getTool;
   let _selectedId = null;
 
   function uid() { return 'E' + Math.random().toString(36).slice(2, 9); }
 
-  function init(getState, setState, onChange) {
+  function init(getState, setState, onChange, getActiveFloor) {
     _getState = getState;
     _setState = setState;
     _onChange = onChange;
+    _getActiveFloor = getActiveFloor || (() => null);
   }
 
   function getAll() { return _getState().elements || []; }
@@ -43,7 +44,8 @@ const Elements = (() => {
 
   function addRoom(x, y, w, h) {
     const el = { id: uid(), kind: 'room', x: Math.round(x), y: Math.round(y),
-                 w: Math.round(w), h: Math.round(h), label: 'Raum', color: ROOM_COLOR, teamIds: [] };
+                 w: Math.round(w), h: Math.round(h), label: 'Raum', color: ROOM_COLOR, teamIds: [],
+                 floorId: _getActiveFloor() || undefined };
     _commit([...getAll(), el]);
     selectElement(el.id);
     return el;
@@ -52,7 +54,8 @@ const Elements = (() => {
   function addWall(x1, y1, x2, y2) {
     const el = { id: uid(), kind: 'wall',
                  x1: Math.round(x1), y1: Math.round(y1),
-                 x2: Math.round(x2), y2: Math.round(y2), thickness: WALL_THICK };
+                 x2: Math.round(x2), y2: Math.round(y2), thickness: WALL_THICK,
+                 floorId: _getActiveFloor() || undefined };
     _commit([...getAll(), el]);
     selectElement(el.id);
     return el;
@@ -60,7 +63,8 @@ const Elements = (() => {
 
   function addDoor(x, y) {
     const el = { id: uid(), kind: 'door', x: Math.round(x), y: Math.round(y),
-                 width: DOOR_WIDTH, angle: 0, swing: 'right' };
+                 width: DOOR_WIDTH, angle: 0, swing: 'right',
+                 floorId: _getActiveFloor() || undefined };
     _commit([...getAll(), el]);
     selectElement(el.id);
     return el;
@@ -138,6 +142,7 @@ const Elements = (() => {
       if (!els.find(e => e.id === id)) { node.remove(); _nodes.delete(id); }
     }
 
+    const af = _getActiveFloor();
     for (const el of els) {
       let g = _nodes.get(el.id);
       if (!g) {
@@ -147,6 +152,8 @@ const Elements = (() => {
         _overlay.appendChild(g);
         _nodes.set(el.id, g);
       }
+      // Only the active floor is visible
+      g.style.display = (!af || !el.floorId || el.floorId === af) ? '' : 'none';
       g.classList.toggle('selected', el.id === _selectedId);
       _draw(g, el);
     }

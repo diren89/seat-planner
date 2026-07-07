@@ -1378,3 +1378,35 @@ input:focus-visible, .tab-btn:focus-visible, .team-item:focus-visible,
   cursor: default;
   pointer-events: none;
 }
+
+/* ── Floors ─────────────────────────────────────────────────────── */
+#floor-select { max-width: 130px; height: 28px; font-size: 12px; padding: 0 6px; font-weight: 700; }
+.floor-list { list-style: none; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.floor-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+.floor-item .floor-name { font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.floor-item .floor-meta { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
+.btn-floor-edit, .btn-floor-delete {
+  width: 26px; height: 26px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: transparent; cursor: pointer; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.btn-floor-edit .icon, .btn-floor-delete .icon { width: 13px; height: 13px; pointer-events: none; }
+.btn-floor-edit:hover   { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn-floor-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+/* Floor without an image: light grid placeholder */
+.plan-stage.no-image {
+  background:
+    repeating-linear-gradient(0deg,  transparent, transparent 49px, var(--border) 49px, var(--border) 50px),
+    repeating-linear-gradient(90deg, transparent, transparent 49px, var(--border) 49px, var(--border) 50px),
+    var(--surface);
+  outline: 1px solid var(--border);
+}

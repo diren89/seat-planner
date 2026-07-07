@@ -13,9 +13,29 @@
     seats: [],
     teams: [],
     elements: [],
+    floors: [],
+    comments: [],
     locked: false,
     view:  { zoom: 1, panX: 0, panY: 0 }
   };
+
+  /* Legacy states (and the seed) know nothing about floors — this floor
+     is what their entities get backfilled onto. */
+  const DEFAULT_FLOOR = { id: 'og2', name: '2. OG', image: 'floorplan/plan-2og.jpg', w: 1139, h: 1349 };
+
+  /* Ensure floors exist and every entity carries a floorId (non-destructive). */
+  function normalizeState(s) {
+    const st = { ...DEFAULT_STATE, ...s };
+    if (!Array.isArray(st.floors) || st.floors.length === 0) {
+      st.floors = [JSON.parse(JSON.stringify(DEFAULT_FLOOR))];
+    }
+    const fid = st.floors[0].id;
+    const fill = arr => (arr || []).map(x => x.floorId ? x : { ...x, floorId: fid });
+    st.seats    = fill(st.seats);
+    st.elements = fill(st.elements);
+    st.comments = fill(st.comments);
+    return st;
+  }
 
   let _state = { ...DEFAULT_STATE };
   let _undoStack = [];
@@ -48,15 +68,17 @@
   /* Apply a plan state received from a collaborator (keep our local view). */
   function applyRemoteState(remote) {
     _applyingRemote = true;
-    _state = {
-      ...DEFAULT_STATE,
+    _state = normalizeState({
       seats:    remote.seats    || [],
       teams:    remote.teams    || [],
       elements: remote.elements || [],
+      floors:   remote.floors   || [],
+      comments: remote.comments || [],
       locked:   !!remote.locked,
       view:     _state.view
-    };
+    });
     Storage.save(_state);
+    applyFloorBackground();
     refresh();
     _applyingRemote = false;
   }
@@ -111,6 +133,8 @@
     Stats.render();
     Seats.renderDetailPanel();
     populateRoomFilter();
+    populateFloorSelect();
+    renderFloorsPanel();
     updateSelectionUI();
     applyLockUI();
     updateHistoryUI();
@@ -123,6 +147,153 @@
     const r = document.getElementById('btn-redo');
     if (u) u.disabled = _undoStack.length === 0;
     if (r) r.disabled = _redoStack.length === 0;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     FLOORS  (active floor is local, like zoom — not synced)
+     ══════════════════════════════════════════════════════════ */
+  let _activeFloor = null;
+
+  function getActiveFloor() {
+    const floors = _state.floors || [];
+    if (!floors.some(f => f.id === _activeFloor)) _activeFloor = floors[0]?.id || null;
+    return _activeFloor;
+  }
+
+  function getFloor(id) { return (_state.floors || []).find(f => f.id === id) || null; }
+
+  function setActiveFloor(id) {
+    if (id === _activeFloor) return;
+    _activeFloor = id;
+    Seats.clearSelection(true);
+    Elements.clearSelection(true);
+    applyFloorBackground();
+    refresh();
+  }
+
+  /* Swap background image + stage/overlay dimensions to the active floor. */
+  function applyFloorBackground() {
+    const f = getFloor(getActiveFloor());
+    const img     = document.getElementById('floorplan-img');
+    const overlay = document.getElementById('plan-overlay');
+    const stage   = document.getElementById('plan-stage');
+    if (!f || !img) return;
+    img.style.width  = f.w + 'px';
+    img.style.height = f.h + 'px';
+    if (f.image) {
+      if (img.getAttribute('src') !== f.image) img.src = f.image;
+      img.style.visibility = '';
+      stage.classList.remove('no-image');
+    } else {
+      img.removeAttribute('src');
+      img.style.visibility = 'hidden';
+      stage.classList.add('no-image');
+    }
+    stage.style.width  = f.w + 'px';
+    stage.style.height = f.h + 'px';
+    if (overlay) {
+      overlay.setAttribute('width', f.w);
+      overlay.setAttribute('height', f.h);
+      overlay.setAttribute('viewBox', `0 0 ${f.w} ${f.h}`);
+    }
+  }
+
+  function populateFloorSelect() {
+    const sel = document.getElementById('floor-select');
+    if (!sel) return;
+    const floors = _state.floors || [];
+    const af = getActiveFloor();
+    sel.innerHTML = floors.map(f =>
+      `<option value="${f.id}"${f.id === af ? ' selected' : ''}>${escAttr(f.name)}</option>`
+    ).join('');
+    sel.style.display = floors.length > 1 ? '' : 'none';
+  }
+
+  function escAttr(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* Floors management panel (Planer tab) */
+  let _editingFloorId = null;   // null = adding
+
+  function renderFloorsPanel() {
+    const list = document.getElementById('floor-list');
+    if (!list) return;
+    const floors = _state.floors || [];
+    list.innerHTML = floors.map(f => `
+      <li class="floor-item" data-id="${f.id}">
+        <span class="floor-name">${escAttr(f.name)}</span>
+        <span class="floor-meta">${f.image ? 'Bild' : 'ohne Bild'} · ${f.w}×${f.h}</span>
+        <div class="team-actions">
+          <button class="btn-floor-edit" data-id="${f.id}" title="Bearbeiten" aria-label="Etage bearbeiten">${Icons.get('edit')}</button>
+          <button class="btn-floor-delete" data-id="${f.id}" title="Löschen" aria-label="Etage löschen">${Icons.get('trash')}</button>
+        </div>
+      </li>`).join('');
+  }
+
+  function openFloorModal(id) {
+    _editingFloorId = id || null;
+    const f = id ? getFloor(id) : null;
+    document.getElementById('modal-floor-title').textContent = f ? 'Etage bearbeiten' : 'Etage hinzufügen';
+    document.getElementById('modal-floor-name').value  = f ? f.name : '';
+    document.getElementById('modal-floor-image').value = f ? (f.image || '') : '';
+    document.getElementById('modal-floor-w').value     = f ? f.w : 1139;
+    document.getElementById('modal-floor-h').value     = f ? f.h : 1349;
+    document.getElementById('modal-floor').style.display = 'flex';
+  }
+
+  function saveFloorModal() {
+    const name  = document.getElementById('modal-floor-name').value.trim();
+    const image = document.getElementById('modal-floor-image').value.trim();
+    const w = parseInt(document.getElementById('modal-floor-w').value, 10) || 1139;
+    const h = parseInt(document.getElementById('modal-floor-h').value, 10) || 1349;
+    if (!name) return toast('Bitte einen Namen angeben.', 'warn');
+    if (_editingFloorId) {
+      setState({ ..._state, floors: _state.floors.map(f => f.id === _editingFloorId ? { ...f, name, image, w, h } : f) });
+    } else {
+      const floor = { id: 'F' + Math.random().toString(36).slice(2, 9), name, image, w, h };
+      setState({ ..._state, floors: [..._state.floors, floor] });
+      setActiveFloor(floor.id);
+    }
+    _editingFloorId = null;
+    document.getElementById('modal-floor').style.display = 'none';
+    applyFloorBackground();
+  }
+
+  function deleteFloor(id) {
+    const floors = _state.floors || [];
+    if (floors.length <= 1) return toast('Die letzte Etage kann nicht gelöscht werden.', 'warn');
+    const f = getFloor(id);
+    const count = _state.seats.filter(s => s.floorId === id).length
+                + _state.elements.filter(e => e.floorId === id).length
+                + (_state.comments || []).filter(c => c.floorId === id).length;
+    confirm(
+      'Etage löschen',
+      `„${f ? f.name : id}" wirklich löschen?` + (count ? ` ${count} Objekt(e) auf dieser Etage werden mitgelöscht.` : ''),
+      () => {
+        setState({
+          ..._state,
+          floors:   _state.floors.filter(x => x.id !== id),
+          seats:    _state.seats.filter(s => s.floorId !== id),
+          elements: _state.elements.filter(e => e.floorId !== id),
+          comments: (_state.comments || []).filter(c => c.floorId !== id)
+        });
+        if (_activeFloor === id) { _activeFloor = null; applyFloorBackground(); refresh(); }
+        toast('Etage gelöscht.', '', { action: { label: 'Rückgängig', fn: undo } });
+      }
+    );
+  }
+
+  function initFloors() {
+    document.getElementById('floor-select').addEventListener('change', e => setActiveFloor(e.target.value));
+    document.getElementById('btn-add-floor').addEventListener('click', () => openFloorModal(null));
+    document.getElementById('modal-floor-save').addEventListener('click', saveFloorModal);
+    document.getElementById('floor-list').addEventListener('click', e => {
+      const edit = e.target.closest('.btn-floor-edit');
+      const del  = e.target.closest('.btn-floor-delete');
+      if (edit) openFloorModal(edit.dataset.id);
+      else if (del) deleteFloor(del.dataset.id);
+    });
   }
 
   /* Fill the room filter dropdown from the current seats, keeping the selection */
@@ -295,7 +466,8 @@
       if (e.key === 'Escape')          { document.getElementById('modal-help').style.display = 'none'; setDrawer(false); Seats.clearSelection(); Elements.clearSelection(); Seats.setHighlightTeam(''); refresh(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault();
-        Seats.selectMany(Seats.getAll().map(s => s.id));
+        const af = getActiveFloor();
+        Seats.selectMany(Seats.getAll().filter(s => !af || s.floorId === af).map(s => s.id));
       }
     });
 
@@ -686,7 +858,8 @@
       'Aktuelle Plätze, Räume und Teams werden durch den Standard-Plan ersetzt. Fortfahren?',
       () => {
         const def = JSON.parse(JSON.stringify(SEED_2OG_STATE));
-        setState({ ...DEFAULT_STATE, ...def });
+        setState(normalizeState(def));
+        applyFloorBackground();
         resetZoom();
         toast('Standard-Plan geladen.', 'success');
       }
@@ -726,7 +899,8 @@
           'Daten importieren',
           'Alle aktuellen Daten werden durch den Import ersetzt. Fortfahren?',
           () => {
-            setState(imported, true);
+            setState(normalizeState(imported), true);
+            applyFloorBackground();
             toast('Import erfolgreich.', 'success');
           }
         );
@@ -995,21 +1169,24 @@
     // Load persisted state — or seed the default map on first run
     const saved = Storage.load();
     if (saved) {
-      _state = { ...DEFAULT_STATE, ...saved };
+      _state = normalizeState(saved);
       _zoom  = saved.view?.zoom ?? 1;
       _panX  = saved.view?.panX ?? 0;
       _panY  = saved.view?.panY ?? 0;
     } else if (typeof SEED_2OG_STATE !== 'undefined') {
-      _state = { ...DEFAULT_STATE, ...JSON.parse(JSON.stringify(SEED_2OG_STATE)) };
+      _state = normalizeState(JSON.parse(JSON.stringify(SEED_2OG_STATE)));
       _zoom  = _state.view?.zoom ?? 1;
       _panX  = _state.view?.panX ?? 0;
       _panY  = _state.view?.panY ?? 0;
       Storage.save(_state);
+    } else {
+      _state = normalizeState(_state);
     }
+    applyFloorBackground();
 
     // Init modules
-    Seats.init(getState, (next) => setState(next), onChange, getTool);
-    Elements.init(getState, (next) => setState(next), onChange);
+    Seats.init(getState, (next) => setState(next), onChange, getTool, getActiveFloor);
+    Elements.init(getState, (next) => setState(next), onChange, getActiveFloor);
     Teams.init(getState, (next) => setState(next), onChange);
     Stats.init(getState);
 
@@ -1059,7 +1236,8 @@
     initDrawer();
     initKeyboard();
     initLegend();
-    Search.init({ getZoom, setPan, refresh });
+    initFloors();
+    Search.init({ getZoom, setPan, refresh, getActiveFloor, setActiveFloor, getFloors: () => _state.floors || [] });
 
     // First render
     applyTransform();

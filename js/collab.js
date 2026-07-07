@@ -115,7 +115,14 @@ const Collab = (() => {
 
   /* ── Ausgehender State (Broadcast gedrosselt + DB debounced) ─ */
   function _lean(state) {
-    return { seats: state.seats || [], teams: state.teams || [], elements: state.elements || [], locked: !!state.locked };
+    return {
+      seats:    state.seats    || [],
+      teams:    state.teams    || [],
+      elements: state.elements || [],
+      floors:   state.floors   || [],
+      comments: state.comments || [],
+      locked:   !!state.locked
+    };
   }
 
   const _sendStateNow = (state) => {

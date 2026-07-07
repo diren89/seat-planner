@@ -12,7 +12,7 @@
     var EYE     = '<svg class="icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M30.94,15.66A16.69,16.69,0,0,0,16,5,16.69,16.69,0,0,0,1.06,15.66a1,1,0,0,0,0,.68A16.69,16.69,0,0,0,16,27,16.69,16.69,0,0,0,30.94,16.34,1,1,0,0,0,30.94,15.66ZM16,25c-5.3,0-10.9-3.93-12.93-9C5.1,10.93,10.7,7,16,7s10.9,3.93,12.93,9C26.9,21.07,21.3,25,16,25Z"/><path d="M16,10a6,6,0,1,0,6,6A6,6,0,0,0,16,10Zm0,10a4,4,0,1,1,4-4A4,4,0,0,1,16,20Z"/></svg>';
     var EYE_OFF = '<svg class="icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M5.24,22.51l1.43-1.42A14.06,14.06,0,0,1,3.07,16C5.1,10.93,10.7,7,16,7a12.38,12.38,0,0,1,4,.72l1.55-1.56A14.72,14.72,0,0,0,16,5,16.69,16.69,0,0,0,1.06,15.66a1,1,0,0,0,0,.68A16,16,0,0,0,5.24,22.51Z"/><path d="M12,15.73a4,4,0,0,1,3.7-3.7l1.81-1.82a6,6,0,0,0-7.33,7.33Z"/><path d="M30.94,15.66A16.4,16.4,0,0,0,25.2,8.22L30,3.41,28.59,2,2,28.59,3.41,30l5.1-5.1A15.29,15.29,0,0,0,16,27,16.69,16.69,0,0,0,30.94,16.34,1,1,0,0,0,30.94,15.66ZM20,16a4,4,0,0,1-6,3.44L19.44,14A4,4,0,0,1,20,16Zm-4,9a13.05,13.05,0,0,1-6-1.58l2.54-2.54a6,6,0,0,0,8.35-8.35l2.87-2.87A14.54,14.54,0,0,1,28.93,16C26.9,21.07,21.3,25,16,25Z"/></svg>';
     // Bump on every deploy so returning browsers never run stale cached code.
-    var APP_VERSION = '20260618-2';
+    var APP_VERSION = '20260618-3';
     var SCRIPTS = [
       'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
       'js/collab-config.js',
@@ -92,7 +92,7 @@
     });
   })();
   </script>
-  <link rel="stylesheet" href="css/style.css?v=20260618-2" />
+  <link rel="stylesheet" href="css/style.css?v=20260618-3" />
   <style>
   #lock-screen {
     position: fixed; inset: 0; background: #29363c;
@@ -214,6 +214,7 @@
       </div>
 
       <div class="plan-toolbar">
+        <select id="floor-select" aria-label="Etage" title="Etage wechseln" style="display:none;"></select>
         <div class="toolbar-filters" aria-label="Filter">
           <select id="filter-team-select" aria-label="Team-Filter"><option value="">Alle Teams</option></select>
           <select id="filter-room-select" aria-label="Raum-Filter"><option value="">Alle Räume</option></select>
@@ -264,6 +265,15 @@
         <div id="element-detail" class="seat-detail">
           <p class="muted">Kein Element ausgewählt.</p>
         </div>
+
+        <hr />
+
+        <details class="collapse-section">
+        <summary>Etagen</summary>
+        <ul class="floor-list" id="floor-list"></ul>
+        <button id="btn-add-floor" class="btn btn-block">Etage hinzufügen</button>
+        <p class="hint">Grundriss-Bild als URL (z.B. floorplan/plan-3og.jpg). Ohne Bild wird ein Raster angezeigt.</p>
+        </details>
 
         <hr />
 
@@ -499,6 +509,25 @@
       </div>
       <div class="modal-footer">
         <button id="modal-name-save" class="btn btn-primary">Übernehmen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Etage anlegen/bearbeiten -->
+  <div class="modal-backdrop" id="modal-floor" style="display:none;">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3 id="modal-floor-title">Etage hinzufügen</h3>
+        <button class="modal-close" data-modal="modal-floor" data-icon="close"></button>
+      </div>
+      <div class="modal-body">
+        <label>Name<input type="text" id="modal-floor-name" maxlength="40" placeholder="z.B. 3. OG" /></label>
+        <label>Grundriss-Bild (URL, optional)<input type="text" id="modal-floor-image" placeholder="floorplan/plan-3og.jpg" /></label>
+        <label>Breite (px)<input type="number" id="modal-floor-w" value="1139" min="200" max="6000" /></label>
+        <label>Höhe (px)<input type="number" id="modal-floor-h" value="1349" min="200" max="6000" /></label>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-floor-save" class="btn btn-primary">Speichern</button>
       </div>
     </div>
   </div>

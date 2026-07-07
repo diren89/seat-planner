@@ -8,6 +8,17 @@ const Search = (() => {
 
   const MAX_RESULTS = 8;
   let _getZoom, _setPan, _refresh;
+  let _getActiveFloor = () => null, _setActiveFloor = () => {}, _getFloors = () => [];
+
+  function _floorName(id) {
+    const f = _getFloors().find(x => x.id === id);
+    return f ? f.name : '';
+  }
+
+  /* Switch to the entity's floor before jumping/highlighting */
+  function _ensureFloor(floorId) {
+    if (floorId && floorId !== _getActiveFloor()) _setActiveFloor(floorId);
+  }
   let _results = [];        // current result objects
   let _activeIdx = -1;      // keyboard-highlighted row
 
@@ -18,10 +29,14 @@ const Search = (() => {
 
     // Collect per source, then merge with reserved slots so seat matches
     // can't crowd out team/room hits (e.g. searching a room name).
+    const multiFloor = _getFloors().length > 1;
     const seats = [], teams = [], rooms = [];
     for (const s of Seats.getAll()) {
       const hay = `${s.label} ${s.room || ''} ${s.equipmentNote || ''}`.toLowerCase();
-      if (hay.includes(needle)) seats.push({ type: 'seat', id: s.id, name: s.label, sub: s.room || '' });
+      if (hay.includes(needle)) {
+        const sub = [s.room, multiFloor ? _floorName(s.floorId) : ''].filter(Boolean).join(' · ');
+        seats.push({ type: 'seat', id: s.id, name: s.label, sub, floorId: s.floorId });
+      }
       if (seats.length >= MAX_RESULTS) break;
     }
     for (const t of Teams.getAll()) {
@@ -29,7 +44,7 @@ const Search = (() => {
     }
     for (const el of Elements.getAll()) {
       if (el.kind === 'room' && (el.label || '').toLowerCase().includes(needle)) {
-        rooms.push({ type: 'room', id: el.id, name: el.label });
+        rooms.push({ type: 'room', id: el.id, name: el.label, sub: multiFloor ? _floorName(el.floorId) : '', floorId: el.floorId });
       }
     }
     const teamsCut = teams.slice(0, 2);
@@ -50,6 +65,7 @@ const Search = (() => {
     if (res.type === 'seat') {
       const seat = Seats.getAll().find(s => s.id === res.id);
       if (!seat) return;
+      _ensureFloor(seat.floorId);
       Seats.select(seat.id);
       Seats.jumpToSeat(seat.label, _getZoom, _setPan);
       _refresh();
@@ -62,6 +78,7 @@ const Search = (() => {
     } else if (res.type === 'room') {
       const el = Elements.get(res.id);
       if (!el) return;
+      _ensureFloor(el.floorId);
       Elements.selectElement(el.id);
       _panToCenter(el.x + el.w / 2, el.y + el.h / 2);
       _refresh();
@@ -102,8 +119,11 @@ const Search = (() => {
   }
 
   /* ── Init / wiring ────────────────────────────────────────── */
-  function init({ getZoom, setPan, refresh }) {
+  function init({ getZoom, setPan, refresh, getActiveFloor, setActiveFloor, getFloors }) {
     _getZoom = getZoom; _setPan = setPan; _refresh = refresh;
+    if (getActiveFloor) _getActiveFloor = getActiveFloor;
+    if (setActiveFloor) _setActiveFloor = setActiveFloor;
+    if (getFloors)      _getFloors = getFloors;
     const input = document.getElementById('global-search-input');
     const ul = document.getElementById('global-search-results');
     if (!input || !ul) return;
