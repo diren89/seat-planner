@@ -899,6 +899,10 @@
       const n = await TeamExport.exportAll();
       toast(n ? `${n} Team-Exporte erstellt.` : 'Keine Teams vorhanden.', n ? 'success' : 'warn');
     });
+    document.getElementById('btn-export-fullplan').addEventListener('click', async () => {
+      const n = await TeamExport.exportFullPlan();
+      toast(`${n} Gesamtplan-Export(e) erstellt.`, 'success');
+    });
 
     // Import
     document.getElementById('import-file').addEventListener('change', async e => {
@@ -1200,6 +1204,7 @@
     Seats.init(getState, (next) => setState(next), onChange, getTool, getActiveFloor);
     Elements.init(getState, (next) => setState(next), onChange, getActiveFloor);
     Comments.init(getState, (next) => setState(next), onChange, getActiveFloor);
+    TeamExport.setFloors(() => _state.floors || []);
     Teams.init(getState, (next) => setState(next), onChange);
     Stats.init(getState);
 
