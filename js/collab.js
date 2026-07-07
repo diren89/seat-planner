@@ -194,8 +194,37 @@ const Collab = (() => {
     _onPeers(peers);
   }
 
+  /* ── Room-level helpers (scenarios) ─────────────────────────── */
+  async function listRooms(prefix) {
+    if (!_client) return [];
+    const { data, error } = await _client
+      .from('plans').select('room_id, updated_by, updated_at')
+      .like('room_id', prefix + '%')
+      .order('updated_at', { ascending: false });
+    if (error) { console.warn('[Collab] listRooms failed:', error.message); return []; }
+    return data || [];
+  }
+
+  async function copyState(targetRoomId, state) {
+    if (!_client) throw new Error('Collaboration nicht verfügbar.');
+    const { error } = await _client.from('plans').upsert({
+      room_id: targetRoomId,
+      state: _lean(state),
+      updated_at: new Date().toISOString(),
+      updated_by: _self ? _self.name : null
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  async function deleteRoom(roomId) {
+    if (!_client) throw new Error('Collaboration nicht verfügbar.');
+    const { error } = await _client.from('plans').delete().eq('room_id', roomId);
+    if (error) throw new Error(error.message);
+  }
+
   return {
     init, broadcastState, sendCursor, setSelection, setName,
+    listRooms, copyState, deleteRoom,
     get enabled() { return _enabled; },
     get roomId() { return _roomId; }
   };

@@ -552,6 +552,7 @@
 
         // Refresh stats when switching to that tab
         if (btn.dataset.tab === 'tab-stats') Stats.render();
+        if (btn.dataset.tab === 'tab-data') renderScenarios();
       });
     });
   }
@@ -1033,6 +1034,135 @@
     return (p && p.trim()) || 'jobrad-2og';
   }
 
+  /* ══════════════════════════════════════════════════════════
+     SCENARIOS  (draft copies of the live plan in own rooms)
+     Room naming: <liveRoom>--sz-<slug>
+     ══════════════════════════════════════════════════════════ */
+  const SZ_SEP = '--sz-';
+
+  function getLiveRoomId() {
+    const r = getRoomId();
+    const i = r.indexOf(SZ_SEP);
+    return i === -1 ? r : r.slice(0, i);
+  }
+  function isScenario() { return getRoomId().includes(SZ_SEP); }
+  function scenarioName() {
+    const r = getRoomId();
+    const i = r.indexOf(SZ_SEP);
+    return i === -1 ? '' : r.slice(i + SZ_SEP.length);
+  }
+
+  function gotoRoom(roomId) {
+    const base = location.origin + location.pathname;
+    location.href = roomId === 'jobrad-2og' ? base : base + '?room=' + encodeURIComponent(roomId);
+  }
+
+  function _slugify(name) {
+    return String(name).toLowerCase()
+      .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  }
+
+  async function renderScenarios() {
+    const list = document.getElementById('scenario-list');
+    if (!list) return;
+    if (typeof Collab === 'undefined' || !Collab.enabled) {
+      list.innerHTML = '<li class="muted">Szenarien benötigen die Live-Verbindung.</li>';
+      return;
+    }
+    const rows = await Collab.listRooms(getLiveRoomId() + SZ_SEP);
+    list.innerHTML = rows.length
+      ? rows.map(r => {
+          const name = r.room_id.slice((getLiveRoomId() + SZ_SEP).length);
+          const date = r.updated_at ? new Date(r.updated_at).toLocaleDateString('de-DE') : '';
+          const active = r.room_id === getRoomId();
+          return `
+            <li class="scenario-item${active ? ' active' : ''}" data-room="${escAttr(r.room_id)}">
+              <span class="scenario-name">${escAttr(name)}</span>
+              <span class="scenario-meta">${escAttr(r.updated_by || '')} · ${date}</span>
+              <div class="team-actions">
+                <button class="btn-scenario-open" data-room="${escAttr(r.room_id)}" title="Öffnen">${active ? 'aktiv' : 'Öffnen'}</button>
+                <button class="btn-scenario-delete" data-room="${escAttr(r.room_id)}" title="Löschen" aria-label="Szenario löschen">${Icons.get('trash')}</button>
+              </div>
+            </li>`;
+        }).join('')
+      : '<li class="muted">Noch keine Szenarien.</li>';
+  }
+
+  function applyScenarioUI() {
+    const banner = document.getElementById('scenario-banner');
+    const chip   = document.getElementById('scenario-chip');
+    const on = isScenario();
+    if (banner) {
+      banner.style.display = on ? 'flex' : 'none';
+      const nameEl = document.getElementById('scenario-banner-name');
+      if (nameEl) nameEl.textContent = scenarioName();
+    }
+    if (chip) {
+      chip.style.display = on ? '' : 'none';
+      chip.textContent = 'Szenario: ' + scenarioName();
+    }
+  }
+
+  function initScenarios() {
+    applyScenarioUI();
+
+    document.getElementById('btn-new-scenario').addEventListener('click', () => {
+      if (typeof Collab === 'undefined' || !Collab.enabled) return toast('Szenarien benötigen die Live-Verbindung.', 'warn');
+      document.getElementById('modal-scenario-name').value = '';
+      document.getElementById('modal-scenario').style.display = 'flex';
+      requestAnimationFrame(() => document.getElementById('modal-scenario-name').focus());
+    });
+
+    document.getElementById('modal-scenario-save').addEventListener('click', async () => {
+      const slug = _slugify(document.getElementById('modal-scenario-name').value);
+      if (!slug) return toast('Bitte einen Namen angeben.', 'warn');
+      const target = getLiveRoomId() + SZ_SEP + slug;
+      try {
+        await Collab.copyState(target, _state);
+        toast('Szenario angelegt — öffne …', 'success');
+        setTimeout(() => gotoRoom(target), 400);
+      } catch (e) {
+        toast('Anlegen fehlgeschlagen: ' + e.message, 'error');
+      }
+    });
+
+    document.getElementById('scenario-list').addEventListener('click', e => {
+      const open = e.target.closest('.btn-scenario-open');
+      const del  = e.target.closest('.btn-scenario-delete');
+      if (open && open.dataset.room !== getRoomId()) gotoRoom(open.dataset.room);
+      else if (del) {
+        confirm('Szenario löschen', `„${del.dataset.room.split(SZ_SEP)[1]}" endgültig löschen?`, async () => {
+          try {
+            await Collab.deleteRoom(del.dataset.room);
+            if (del.dataset.room === getRoomId()) return gotoRoom(getLiveRoomId());
+            toast('Szenario gelöscht.', 'success');
+            renderScenarios();
+          } catch (err) { toast('Löschen fehlgeschlagen: ' + err.message, 'error'); }
+        });
+      }
+    });
+
+    // Banner actions (only visible inside a scenario)
+    document.getElementById('btn-scenario-apply').addEventListener('click', () => {
+      confirm(
+        'Szenario übernehmen',
+        'Der Live-Plan wird vollständig durch dieses Szenario ersetzt (Plätze, Teams, Räume, Etagen, Kommentare). Fortfahren?',
+        async () => {
+          try {
+            await Collab.copyState(getLiveRoomId(), _state);
+            toast('Szenario übernommen — wechsle zum Live-Plan …', 'success');
+            setTimeout(() => gotoRoom(getLiveRoomId()), 500);
+          } catch (e) { toast('Übernehmen fehlgeschlagen: ' + e.message, 'error'); }
+        }
+      );
+    });
+    document.getElementById('btn-scenario-back').addEventListener('click', () => gotoRoom(getLiveRoomId()));
+
+    // Populate the list once the collab connection settles
+    setTimeout(renderScenarios, 1500);
+  }
+
   function initCollab() {
     if (typeof Collab === 'undefined' || !window.COLLAB_CONFIG) return;
     const ident = getIdentity();
@@ -1264,6 +1394,7 @@
     initKeyboard();
     initLegend();
     initFloors();
+    initScenarios();
     Search.init({ getZoom, setPan, refresh, getActiveFloor, setActiveFloor, getFloors: () => _state.floors || [] });
 
     // First render

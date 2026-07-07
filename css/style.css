@@ -1433,3 +1433,53 @@ input:focus-visible, .tab-btn:focus-visible, .team-item:focus-visible,
 .checkbox-row { display: flex !important; flex-direction: row !important; align-items: center; gap: 8px; }
 #modal-comment-text { resize: vertical; }
 body.app-locked .comment-pin { pointer-events: none; }
+
+/* ── Scenarios ──────────────────────────────────────────────────── */
+.scenario-chip {
+  background: var(--warn);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 128px;
+  white-space: nowrap;
+}
+.scenario-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--color-orange-300);
+  color: var(--ink);
+  font-size: 13px;
+  border-bottom: 1px solid var(--color-orange-600);
+  flex-shrink: 0;
+}
+.scenario-banner-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.scenario-list { list-style: none; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.scenario-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+.scenario-item.active { border-color: var(--warn); box-shadow: inset 3px 0 0 var(--warn); }
+.scenario-item .scenario-name { font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scenario-item .scenario-meta { color: var(--text-muted); font-size: 11px; flex-shrink: 0; }
+.btn-scenario-open {
+  height: 26px; padding: 0 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: transparent; cursor: pointer; color: var(--text); font-size: 11px;
+}
+.btn-scenario-open:hover { background: var(--surface2); }
+.btn-scenario-delete {
+  width: 26px; height: 26px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: transparent; cursor: pointer; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-scenario-delete .icon { width: 13px; height: 13px; pointer-events: none; }
+.btn-scenario-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
