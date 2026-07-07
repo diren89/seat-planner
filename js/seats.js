@@ -70,6 +70,16 @@ const Seats = (() => {
     _onChange('seat-updated', id);
   }
 
+  /** Batch variant: one setState (= one undo step) for many seats. */
+  function updateSeats(ids, patch) {
+    const state = _getState();
+    _setState({
+      ...state,
+      seats: state.seats.map(s => ids.includes(s.id) ? { ...s, ...patch } : s)
+    });
+    _onChange('seats-updated', ids);
+  }
+
   function deleteSeats(ids) {
     const state = _getState();
     // Clear selection first: _setState re-renders synchronously and the
@@ -279,12 +289,8 @@ const Seats = (() => {
       openSeatModal(el.dataset.id);
     });
 
-    // Context menu
-    el.addEventListener('contextmenu', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      openSeatModal(el.dataset.id);
-    });
+    // Right-click is handled by the app-level seat context menu
+    // (app.js initContextMenu) — no per-seat handler needed.
   }
 
   function initDragHandlers(viewport, getZoom) {
@@ -507,7 +513,7 @@ const Seats = (() => {
 
   return {
     init,
-    addSeat, updateSeat, deleteSeats, getAll,
+    addSeat, updateSeat, updateSeats, deleteSeats, getAll,
     generateGrid,
     select, selectMany, clearSelection, getSelectedIds,
     setHighlightTeam, getHighlightTeam,

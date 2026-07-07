@@ -820,7 +820,9 @@
       const li = e.target.closest('[data-id]');
       if (!li) return;
       _dragId = li.dataset.id;
-      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.effectAllowed = 'copyMove';
+      // Drag-to-assign: Team-Zeilen tragen ihre Id für Drops auf dem Plan
+      if (li.classList.contains('team-item')) e.dataTransfer.setData('text/team-id', li.dataset.id);
       li.classList.add('dragging');
     });
     teamList.addEventListener('dragend', e => {
@@ -1102,6 +1104,146 @@
       chip.style.display = on ? '' : 'none';
       chip.textContent = 'Szenario: ' + scenarioName();
     }
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     SEAT CONTEXT MENU  (right-click / long-press)
+     ══════════════════════════════════════════════════════════ */
+  const STATUS_ITEMS = [
+    ['free', 'Frei'], ['occupied', 'Belegt'], ['reserved', 'Reserviert'], ['blocked', 'Blockiert']
+  ];
+
+  function _ctxTargets(seatId) {
+    const sel = Seats.getSelectedIds();
+    return sel.includes(seatId) ? sel : [seatId];
+  }
+
+  function closeContextMenu() {
+    const m = document.getElementById('context-menu');
+    if (m) { m.style.display = 'none'; m.innerHTML = ''; }
+  }
+
+  function openContextMenu(seatId, clientX, clientY) {
+    if (isLocked()) return;
+    const m = document.getElementById('context-menu');
+    if (!m) return;
+    const ids = _ctxTargets(seatId);
+    const many = ids.length > 1;
+    const teams = Teams.getAll();
+
+    m.innerHTML = `
+      <div class="ctx-title">${many ? ids.length + ' Plätze' : escAttr(Seats.getAll().find(s => s.id === seatId)?.label || 'Platz')}</div>
+      <div class="ctx-group">${STATUS_ITEMS.map(([v, l]) =>
+        `<button class="ctx-item" data-act="status" data-val="${v}"><span class="ctx-chip chip-${v}"></span>${l}</button>`).join('')}
+      </div>
+      <div class="ctx-sep"></div>
+      <button class="ctx-item" data-act="team-toggle">Team zuweisen ▸</button>
+      <div class="ctx-sub" id="ctx-team-sub" hidden>
+        <button class="ctx-item" data-act="team" data-val="">— kein Team —</button>
+        ${teams.map(t => `<button class="ctx-item" data-act="team" data-val="${t.id}"><span class="ctx-chip" style="background:${t.color}"></span>${escAttr(t.name)}</button>`).join('')}
+      </div>
+      <div class="ctx-sep"></div>
+      ${many ? '' : '<button class="ctx-item" data-act="edit">Bearbeiten …</button>'}
+      <button class="ctx-item ctx-danger" data-act="delete">Löschen${many ? ' (' + ids.length + ')' : ''}</button>
+    `;
+
+    m.style.display = 'block';
+    // Keep inside the viewport
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const rect = m.getBoundingClientRect();
+    m.style.left = Math.min(clientX, vw - rect.width - 8) + 'px';
+    m.style.top  = Math.min(clientY, vh - rect.height - 8) + 'px';
+
+    m.onclick = e => {
+      const btn = e.target.closest('.ctx-item');
+      if (!btn) return;
+      const act = btn.dataset.act;
+      if (act === 'team-toggle') {
+        const sub = document.getElementById('ctx-team-sub');
+        sub.hidden = !sub.hidden;
+        return;   // Menü offen lassen
+      }
+      if (act === 'status') {
+        Seats.updateSeats(ids, { status: btn.dataset.val });
+        toast('Status geändert.', '', { action: { label: 'Rückgängig', fn: undo } });
+      } else if (act === 'team') {
+        Teams.assignSeats(ids, btn.dataset.val || null);
+        toast(btn.dataset.val ? 'Team zugewiesen.' : 'Zuweisung aufgehoben.', '', { action: { label: 'Rückgängig', fn: undo } });
+      } else if (act === 'edit') {
+        Seats.openSeatModal(seatId);
+      } else if (act === 'delete') {
+        Seats.clearSelection(true);
+        Seats.selectMany(ids);
+        deleteSelected();
+      }
+      closeContextMenu();
+    };
+  }
+
+  function initContextMenu() {
+    const viewport = document.getElementById('plan-viewport');
+
+    viewport.addEventListener('contextmenu', e => {
+      const seatEl = e.target.closest('.seat');
+      if (!seatEl) return;               // Browser-Menü auf freier Fläche zulassen
+      e.preventDefault();
+      openContextMenu(seatEl.dataset.id, e.clientX, e.clientY);
+    });
+
+    // Long-press (Touch) öffnet das Menü
+    let lpTimer = null, lpStart = null;
+    viewport.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'touch') return;
+      const seatEl = e.target.closest('.seat');
+      if (!seatEl) return;
+      lpStart = { x: e.clientX, y: e.clientY };
+      lpTimer = setTimeout(() => openContextMenu(seatEl.dataset.id, lpStart.x, lpStart.y), 500);
+    });
+    const lpCancel = e => {
+      if (!lpTimer) return;
+      if (e.type === 'pointermove' && lpStart &&
+          Math.hypot(e.clientX - lpStart.x, e.clientY - lpStart.y) < 8) return;
+      clearTimeout(lpTimer); lpTimer = null;
+    };
+    viewport.addEventListener('pointermove', lpCancel);
+    viewport.addEventListener('pointerup',   lpCancel);
+    viewport.addEventListener('pointercancel', lpCancel);
+
+    // Schließen: Klick außerhalb, Esc, Zoom/Scroll
+    document.addEventListener('mousedown', e => { if (!e.target.closest('#context-menu')) closeContextMenu(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeContextMenu(); });
+    viewport.addEventListener('wheel', closeContextMenu, { passive: true });
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     DRAG-TO-ASSIGN  (drag a team row onto a seat)
+     ══════════════════════════════════════════════════════════ */
+  function initDragAssign() {
+    const viewport = document.getElementById('plan-viewport');
+    let lastTarget = null;
+    const clearTarget = () => { if (lastTarget) { lastTarget.classList.remove('drop-target'); lastTarget = null; } };
+
+    viewport.addEventListener('dragover', e => {
+      if (![...e.dataTransfer.types].includes('text/team-id')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      const seatEl = document.elementFromPoint(e.clientX, e.clientY)?.closest('.seat');
+      if (seatEl !== lastTarget) { clearTarget(); if (seatEl) { seatEl.classList.add('drop-target'); lastTarget = seatEl; } }
+    });
+    viewport.addEventListener('dragleave', e => { if (e.target === viewport) clearTarget(); });
+    viewport.addEventListener('drop', e => {
+      const teamId = e.dataTransfer.getData('text/team-id');
+      clearTarget();
+      if (!teamId) return;
+      e.preventDefault();
+      const seatEl = document.elementFromPoint(e.clientX, e.clientY)?.closest('.seat');
+      if (!seatEl) return;
+      const ids = _ctxTargets(seatEl.dataset.id);
+      Teams.assignSeats(ids, teamId);
+      const team = Teams.getTeam(teamId);
+      toast(`${ids.length} Platz/Plätze → ${team ? team.name : 'Team'}.`, '', { action: { label: 'Rückgängig', fn: undo } });
+    });
+    document.addEventListener('dragend', clearTarget);
   }
 
   function initScenarios() {
@@ -1395,6 +1537,8 @@
     initLegend();
     initFloors();
     initScenarios();
+    initContextMenu();
+    initDragAssign();
     Search.init({ getZoom, setPan, refresh, getActiveFloor, setActiveFloor, getFloors: () => _state.floors || [] });
 
     // First render
