@@ -70,8 +70,10 @@ const Seats = (() => {
 
   function deleteSeats(ids) {
     const state = _getState();
-    _setState({ ...state, seats: state.seats.filter(s => !ids.includes(s.id)) });
+    // Clear selection first: _setState re-renders synchronously and the
+    // detail panel must not see selected ids pointing at deleted seats.
     _selectedIds = _selectedIds.filter(id => !ids.includes(id));
+    _setState({ ...state, seats: state.seats.filter(s => !ids.includes(s.id)) });
     _onChange('seats-deleted', ids);
   }
 
@@ -421,10 +423,16 @@ const Seats = (() => {
     }
 
     const seats  = getAll().filter(s => ids.includes(s.id));
+    // Selection can still reference seats deleted in this very update cycle
+    if (seats.length === 0) {
+      _selectedIds = [];
+      container.innerHTML = '<p class="muted">Kein Platz ausgewählt.</p>';
+      return;
+    }
     const teams  = _getState().teams || [];
     const teamMap = Object.fromEntries(teams.map(t => [t.id, t]));
 
-    if (ids.length === 1) {
+    if (seats.length === 1) {
       const s = seats[0];
       const team = s.teamId ? teamMap[s.teamId] : null;
       const statusLabel = { free: 'Frei', occupied: 'Belegt', reserved: 'Reserviert', blocked: 'Blockiert' };
@@ -440,7 +448,7 @@ const Seats = (() => {
       `;
     } else {
       container.innerHTML = `
-        <div class="detail-row"><span class="detail-label">Ausgewählt</span><span class="detail-value">${ids.length} Plätze</span></div>
+        <div class="detail-row"><span class="detail-label">Ausgewählt</span><span class="detail-value">${seats.length} Plätze</span></div>
         <div class="detail-row"><span class="detail-label">Doppelklick</span><span class="detail-value">Einzel bearbeiten</span></div>
       `;
     }

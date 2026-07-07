@@ -19,6 +19,7 @@
 
   let _state = { ...DEFAULT_STATE };
   let _undoStack = [];
+  let _redoStack = [];
   const UNDO_LIMIT = 30;
   let _settingLock = false;   // bypasses the lock-guard for the lock toggle itself
 
@@ -34,6 +35,7 @@
     if (!skipUndo) {
       _undoStack.push(JSON.stringify(_state));
       if (_undoStack.length > UNDO_LIMIT) _undoStack.shift();
+      _redoStack = [];   // a new action invalidates the redo history
     }
     _state = next;
     Storage.save(_state);
@@ -78,11 +80,23 @@
   function undo() {
     if (isLocked()) return toast('Plan ist gesperrt.', 'warn');
     if (_undoStack.length === 0) return toast('Nichts zum Rückgängig-Machen.', 'warn');
+    _redoStack.push(JSON.stringify(_state));
     _state = JSON.parse(_undoStack.pop());
     Storage.save(_state);
     refresh(true);
     if (typeof Collab !== 'undefined' && Collab.enabled) Collab.broadcastState(_state);
     toast('Rückgängig gemacht.', 'success');
+  }
+
+  function redo() {
+    if (isLocked()) return toast('Plan ist gesperrt.', 'warn');
+    if (_redoStack.length === 0) return toast('Nichts zum Wiederherstellen.', 'warn');
+    _undoStack.push(JSON.stringify(_state));
+    _state = JSON.parse(_redoStack.pop());
+    Storage.save(_state);
+    refresh(true);
+    if (typeof Collab !== 'undefined' && Collab.enabled) Collab.broadcastState(_state);
+    toast('Wiederhergestellt.', 'success');
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -99,7 +113,16 @@
     populateRoomFilter();
     updateSelectionUI();
     applyLockUI();
+    updateHistoryUI();
     if (full) applyTransform();
+  }
+
+  /* Enable/disable the undo/redo header buttons to mirror the stacks */
+  function updateHistoryUI() {
+    const u = document.getElementById('btn-undo');
+    const r = document.getElementById('btn-redo');
+    if (u) u.disabled = _undoStack.length === 0;
+    if (r) r.disabled = _redoStack.length === 0;
   }
 
   /* Fill the room filter dropdown from the current seats, keeping the selection */
@@ -262,7 +285,9 @@
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 
       if (e.code === 'Space')          { e.preventDefault(); _spaceDown = true; }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z') && e.shiftKey) { e.preventDefault(); redo(); }
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
       if (e.key === '+' || e.key === '=') setZoom(_zoom + ZOOM_STEP);
       if (e.key === '-')                setZoom(_zoom - ZOOM_STEP);
       if (e.key === '0')               resetZoom();
@@ -427,7 +452,7 @@
       const label = { room: 'Raum', wall: 'Wand', door: 'Tür' }[el?.kind] || 'Element';
       confirm('Element löschen', `${label} wirklich löschen?`, () => {
         Elements.deleteElements([elId]);
-        toast(`${label} gelöscht.`);
+        toast(`${label} gelöscht.`, '', { action: { label: 'Rückgängig', fn: undo } });
       });
       return;
     }
@@ -439,7 +464,7 @@
       `${ids.length} Platz/Plätze wirklich löschen?`,
       () => {
         Seats.deleteSeats(ids);
-        toast(`${ids.length} Platz/Plätze gelöscht.`);
+        toast(`${ids.length} Platz/Plätze gelöscht.`, '', { action: { label: 'Rückgängig', fn: undo } });
       }
     );
   }
@@ -471,7 +496,7 @@
       const ids = Seats.getSelectedIds();
       if (ids.length === 0) return;
       Teams.assignSeats(ids, null);
-      toast('Zuweisung aufgehoben.');
+      toast('Zuweisung aufgehoben.', '', { action: { label: 'Rückgängig', fn: undo } });
     });
 
     document.getElementById('btn-help').addEventListener('click', () => {
@@ -561,13 +586,13 @@
         confirm(
           'Team löschen',
           `Team "${team.name}" und alle Zuweisungen löschen?`,
-          () => { Teams.deleteTeam(deleteBtn.dataset.id); toast('Team gelöscht.'); }
+          () => { Teams.deleteTeam(deleteBtn.dataset.id); toast('Team gelöscht.', '', { action: { label: 'Rückgängig', fn: undo } }); }
         );
         return;
       }
       if (sectionDel) {
         confirm('Abschnitt löschen', 'Abschnitt-Trenner löschen? (Teams bleiben erhalten.)',
-          () => { Teams.deleteItem(sectionDel.dataset.id); toast('Abschnitt gelöscht.'); });
+          () => { Teams.deleteItem(sectionDel.dataset.id); toast('Abschnitt gelöscht.', '', { action: { label: 'Rückgängig', fn: undo } }); });
         return;
       }
       if (nameEl) {
@@ -748,6 +773,7 @@
     document.getElementById('btn-zoom-out').addEventListener('click',   () => setZoom(_zoom - ZOOM_STEP));
     document.getElementById('btn-zoom-reset').addEventListener('click', resetZoom);
     document.getElementById('btn-undo').addEventListener('click',       undo);
+    document.getElementById('btn-redo').addEventListener('click',       redo);
     document.getElementById('btn-lock').addEventListener('click',       () => setLocked(!isLocked()));
   }
 
@@ -761,19 +787,31 @@
   /* ══════════════════════════════════════════════════════════
      TOAST
      ══════════════════════════════════════════════════════════ */
-  function toast(msg, type = '') {
+  function toast(msg, type = '', opts = {}) {
     const container = document.getElementById('toast-container');
     const el = document.createElement('div');
     el.className = 'toast' + (type ? ' toast-' + type : '');
     el.textContent = msg;
+
+    const dismiss = () => {
+      el.classList.remove('show');
+      setTimeout(() => el.remove(), 250);
+    };
+
+    // Optional action button (e.g. "Rückgängig") — longer display time
+    if (opts.action && typeof opts.action.fn === 'function') {
+      const btn = document.createElement('button');
+      btn.className = 'toast-action';
+      btn.textContent = opts.action.label || 'Rückgängig';
+      btn.addEventListener('click', () => { opts.action.fn(); dismiss(); });
+      el.appendChild(btn);
+    }
+
     container.appendChild(el);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => el.classList.add('show'));
     });
-    setTimeout(() => {
-      el.classList.remove('show');
-      setTimeout(() => el.remove(), 250);
-    }, 2500);
+    setTimeout(dismiss, opts.action ? 6000 : 2500);
   }
 
   /* ══════════════════════════════════════════════════════════
