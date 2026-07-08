@@ -325,6 +325,7 @@ html, body {
 
 /* ── Sidebar ───────────────────────────────────────────────────── */
 .sidebar {
+  position: relative;
   width: var(--sidebar-w);
   flex-shrink: 0;
   background: var(--surface);
@@ -333,6 +334,17 @@ html, body {
   flex-direction: column;
   overflow: hidden;
 }
+
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0; left: -3px; bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 5;
+  background: transparent;
+}
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle.dragging { background: var(--accent); }
 
 /* ── Tabs ──────────────────────────────────────────────────────── */
 .tab-nav {
@@ -608,6 +620,14 @@ select:focus-visible {
 
 /* Other seats faded while a team is focused (still clickable, unlike .dimmed) */
 .seat.team-faded { opacity: .22; transition: opacity .15s; }
+
+/* Lightweight preview ring on team-list hover — no fade of other seats,
+   below .team-highlight (19) / .selected (20) so a click-pin still wins */
+.seat.team-hover {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent);
+  z-index: 18;
+}
 
 .assign-actions { display: flex; flex-direction: column; gap: 6px; }
 
@@ -1096,6 +1116,8 @@ input:focus-visible, .tab-btn:focus-visible, .team-item:focus-visible,
 
 @media (max-width: 900px) {
   #btn-drawer { display: inline-flex; }
+
+  .sidebar-resize-handle { display: none; }
 
   .sidebar {
     position: fixed;

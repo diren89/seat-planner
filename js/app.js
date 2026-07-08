@@ -758,6 +758,21 @@
 
     const teamList = document.getElementById('team-list');
 
+    // Hover preview: lightweight ring on a team's seats, no fade of others.
+    // mouseover/mouseout (not mouseenter/leave) since they bubble for delegation.
+    teamList.addEventListener('mouseover', e => {
+      const item = e.target.closest('.team-item');
+      if (!item || item.contains(e.relatedTarget)) return;
+      Seats.setHoverTeam(item.dataset.id);
+      refresh();
+    });
+    teamList.addEventListener('mouseout', e => {
+      const item = e.target.closest('.team-item');
+      if (!item || item.contains(e.relatedTarget)) return;
+      Seats.setHoverTeam('');
+      refresh();
+    });
+
     // Team list events (edit / delete / section-delete / highlight) via delegation
     teamList.addEventListener('click', e => {
       const editBtn    = e.target.closest('.btn-team-edit');
@@ -1443,6 +1458,44 @@
     matchMedia('(min-width: 901px)').addEventListener('change', e => { if (e.matches) setDrawer(false); });
   }
 
+  /* ── Sidebar resize (desktop only; mobile drawer keeps its fixed width) ── */
+  const SIDEBAR_MIN = 220, SIDEBAR_MAX = 560;
+
+  function initSidebarResize() {
+    const handle = document.getElementById('sidebar-resize-handle');
+    if (!handle) return;
+
+    const saved = parseInt(localStorage.getItem('sidebar_w'), 10);
+    if (saved && matchMedia('(min-width: 901px)').matches) {
+      document.documentElement.style.setProperty('--sidebar-w',
+        Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, saved)) + 'px');
+    }
+
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startWidth = document.getElementById('sidebar').getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.body.style.userSelect = 'none';
+
+      function onMove(me) {
+        // Sidebar sits on the right: dragging left grows it.
+        const w = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, startWidth + (startX - me.clientX)));
+        document.documentElement.style.setProperty('--sidebar-w', w + 'px');
+      }
+      function onUp() {
+        handle.classList.remove('dragging');
+        document.body.style.userSelect = '';
+        const w = document.getElementById('sidebar').getBoundingClientRect().width;
+        localStorage.setItem('sidebar_w', Math.round(w));
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
   function fillIcons() {
     if (typeof Icons === 'undefined') return;
     document.querySelectorAll('[data-icon]').forEach(el => {
@@ -1533,6 +1586,7 @@
     initDataTab();
     initHeaderButtons();
     initDrawer();
+    initSidebarResize();
     initKeyboard();
     initLegend();
     initFloors();

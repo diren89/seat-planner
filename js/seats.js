@@ -143,6 +143,11 @@ const Seats = (() => {
   }
   function getHighlightTeam() { return _highlightTeamId; }
 
+  /* ── Team hover (transient preview ring, independent of the click-pin) ── */
+  let _hoverTeamId = '';
+  function setHoverTeam(teamId) { _hoverTeamId = teamId || ''; }
+  function getHoverTeam() { return _hoverTeamId; }
+
   /* ── Filter ───────────────────────────────────────────────── */
   function setFilter(teamId, status, room) {
     _filterTeam   = teamId   || '';
@@ -232,6 +237,9 @@ const Seats = (() => {
 
       // Team highlight (click on a team name in the list)
       el.classList.toggle('team-highlight', !!_highlightTeamId && seat.teamId === _highlightTeamId);
+
+      // Team hover preview (mouseover in the team list) — click-pin wins on overlap
+      el.classList.toggle('team-hover', !!_hoverTeamId && seat.teamId === _hoverTeamId && seat.teamId !== _highlightTeamId);
 
       // Filter dimming / team focus fade
       if (hasFilter) {
@@ -517,6 +525,7 @@ const Seats = (() => {
     generateGrid,
     select, selectMany, clearSelection, getSelectedIds,
     setHighlightTeam, getHighlightTeam,
+    setHoverTeam, getHoverTeam,
     setFilter, clearFilter,
     render, renderDetailPanel,
     initDragHandlers, initLasso,
