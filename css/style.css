@@ -332,13 +332,15 @@ html, body {
   border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* No overflow:hidden here — .tab-panel handles its own scroll (overflow-y:auto
+     below), and clipping would cut the resize handle's hit area (it straddles
+     the border, partly outside this box). */
 }
 
 .sidebar-resize-handle {
   position: absolute;
-  top: 0; left: -3px; bottom: 0;
-  width: 6px;
+  top: 0; left: -5px; bottom: 0;
+  width: 10px;
   cursor: col-resize;
   z-index: 5;
   background: transparent;
