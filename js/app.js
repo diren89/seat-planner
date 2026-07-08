@@ -561,6 +561,8 @@
      MODALS
      ══════════════════════════════════════════════════════════ */
   function initModals() {
+    ColorPicker.attach('modal-el-room-color-trigger', 'modal-el-room-color');
+
     // Close via backdrop or [data-modal] buttons
     document.addEventListener('click', e => {
       const closeTarget = e.target.closest('[data-modal]');
@@ -733,6 +735,9 @@
      TEAMS TAB
      ══════════════════════════════════════════════════════════ */
   function initTeamsTab() {
+    ColorPicker.attach('team-color-trigger', 'team-color-input');
+    ColorPicker.attach('modal-team-color-trigger', 'modal-team-color');
+
     // Add team
     document.getElementById('btn-add-team').addEventListener('click', () => {
       const name   = document.getElementById('team-name-input').value.trim();
@@ -778,8 +783,20 @@
       const editBtn    = e.target.closest('.btn-team-edit');
       const deleteBtn  = e.target.closest('.btn-team-delete');
       const sectionDel = e.target.closest('.btn-section-delete');
+      const sectionSw  = e.target.closest('.section-swatch');
+      const sectionGen = e.target.closest('.btn-section-generate');
       const nameEl     = e.target.closest('.team-name');
       if (editBtn) { Teams.openEditModal(editBtn.dataset.id); return; }
+      if (sectionSw) {
+        ColorPicker.openFor(sectionSw, hex => Teams.updateItemColor(sectionSw.dataset.id, hex));
+        return;
+      }
+      if (sectionGen) {
+        const n = Teams.generateSectionTeamColors(sectionGen.dataset.id);
+        if (n > 0) toast(`Farben für ${n} Team${n === 1 ? '' : 's'} generiert.`, '', { action: { label: 'Rückgängig', fn: undo } });
+        else toast('Dieser Abschnitt hat keine Teams.', 'warn');
+        return;
+      }
       if (deleteBtn) {
         const team = Teams.getTeam(deleteBtn.dataset.id);
         if (!team) return;

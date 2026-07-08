@@ -1386,6 +1386,9 @@ input:focus-visible, .tab-btn:focus-visible, .team-item:focus-visible,
 
 /* ── Toast action button + disabled history buttons ─────────────── */
 .toast .toast-action {
+  /* .toast-container/.toast are pointer-events:none so toasts never block
+     clicks on the UI beneath them — this button opts back in explicitly. */
+  pointer-events: auto;
   margin-left: 12px;
   padding: 3px 10px;
   border: 1px solid rgba(255,255,255,.5);
@@ -1554,3 +1557,63 @@ body.app-locked .comment-pin { pointer-events: none; }
   transform: translate(-50%, -50%) scale(1.2);
   z-index: 21;
 }
+
+/* ── Color picker (swatch-grid trigger + popover) ───────────────── */
+.color-swatch-btn {
+  width: 24px; height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,.2);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+.color-swatch-btn:focus-visible { outline: var(--pltn-focus-outline); outline-offset: 2px; }
+
+.color-popover {
+  position: fixed;
+  z-index: 210;
+  display: none;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  width: 188px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+}
+.color-swatch {
+  width: 24px; height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,.15);
+  cursor: pointer;
+  padding: 0;
+  transition: transform .1s;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch-custom {
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+}
+.color-swatch-custom .icon { width: 14px; height: 14px; pointer-events: none; }
+
+/* ── Section swatch + color-generate button (team list) ─────────── */
+.section-swatch {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.2);
+  cursor: pointer;
+  padding: 0;
+}
+.section-swatch:focus-visible { outline: var(--pltn-focus-outline); outline-offset: 2px; }
+
+.btn-section-generate {
+  width: 22px; height: 22px; padding: 0;
+  border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: transparent; cursor: pointer; color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.btn-section-generate .icon { width: 14px; height: 14px; pointer-events: none; }
+.btn-section-generate:hover { background: var(--accent); color: var(--ink); border-color: var(--accent); }

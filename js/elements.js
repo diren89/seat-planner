@@ -464,6 +464,7 @@ const Elements = (() => {
       document.getElementById('el-room-fields').style.display = 'block';
       document.getElementById('modal-el-room-label').value = el.label || '';
       document.getElementById('modal-el-room-color').value = el.color || ROOM_COLOR;
+      document.getElementById('modal-el-room-color-trigger').style.background = el.color || ROOM_COLOR;
       _renderTeamPicker(el.teamIds || []);
     } else if (el.kind === 'wall') {
       title.textContent = 'Wand bearbeiten';

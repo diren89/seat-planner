@@ -72,7 +72,12 @@ const Teams = (() => {
   /* ── Sections (dividers stored inline in the teams array) ──── */
   function addSection(name) {
     const state = _getState();
-    const section = { id: 'S' + Math.random().toString(36).slice(2, 9), kind: 'section', name: (name || 'Neuer Abschnitt').trim() };
+    const section = {
+      id: 'S' + Math.random().toString(36).slice(2, 9),
+      kind: 'section',
+      name: (name || 'Neuer Abschnitt').trim(),
+      color: Colorgen.palette(1)[0]
+    };
     _setState({ ...state, teams: [...state.teams, section] });
     _onChange('section-added', section);
     return section;
@@ -85,6 +90,35 @@ const Teams = (() => {
     if (!nm) return;
     _setState({ ...state, teams: state.teams.map(t => t.id === id ? { ...t, name: nm } : t) });
     _onChange('item-renamed', id);
+  }
+
+  /** Set the color of a team or a section (one code path for both). */
+  function updateItemColor(id, color) {
+    const state = _getState();
+    _setState({ ...state, teams: state.teams.map(t => t.id === id ? { ...t, color } : t) });
+    _onChange('item-color-updated', id);
+  }
+
+  /** Generate harmonious-but-distinguishable colors for every team inside
+   *  a section (from the section to the next section/end), based on the
+   *  section's own color. One setState call = one undo step. */
+  function generateSectionTeamColors(sectionId) {
+    const state = _getState();
+    const arr = state.teams;
+    const from = arr.findIndex(t => t.id === sectionId);
+    if (from === -1 || arr[from].kind !== 'section') return 0;
+    let to = from + 1;
+    while (to < arr.length && arr[to].kind !== 'section') to++;
+    const memberIds = arr.slice(from + 1, to).map(t => t.id);
+    if (memberIds.length === 0) return 0;
+
+    const baseHue = Colorgen.hexToHsl(arr[from].color).h;
+    const colors = Colorgen.palette(memberIds.length, { baseHue, spread: 100 });
+    const colorMap = new Map(memberIds.map((id, i) => [id, colors[i]]));
+
+    _setState({ ...state, teams: arr.map(t => colorMap.has(t.id) ? { ...t, color: colorMap.get(t.id) } : t) });
+    _onChange('section-colors-generated', sectionId);
+    return memberIds.length;
   }
 
   /** Delete a team or section by id (teams also get unassigned from seats). */
@@ -164,7 +198,9 @@ const Teams = (() => {
             return `
             <li class="team-section" draggable="true" data-id="${t.id}">
               <span class="drag-handle" title="Ziehen zum Sortieren">${Icons.get('drag')}</span>
+              <button class="section-swatch" data-id="${t.id}" style="background:${t.color || '#93a8b2'};" title="Abschnittsfarbe wählen" aria-label="Abschnittsfarbe wählen"></button>
               <span class="section-name">${escHtml(t.name)}</span>
+              <button class="btn-section-generate" data-id="${t.id}" title="Teamfarben aus Abschnittsfarbe generieren" aria-label="Teamfarben aus Abschnittsfarbe generieren">${Icons.get('magic-wand')}</button>
               <button class="btn-section-delete" data-id="${t.id}" title="Abschnitt löschen" aria-label="Abschnitt löschen">${Icons.get('trash')}</button>
             </li>`;
           }
@@ -221,6 +257,7 @@ const Teams = (() => {
     _editingTeamId = id;
     document.getElementById('modal-team-name').value   = team.name;
     document.getElementById('modal-team-color').value  = team.color;
+    document.getElementById('modal-team-color-trigger').style.background = team.color;
     document.getElementById('modal-team-demand').value = team.demand || 0;
     document.getElementById('modal-team').style.display = 'flex';
   }
@@ -249,6 +286,7 @@ const Teams = (() => {
     init,
     addTeam, updateTeam, deleteTeam, getTeam, getAll,
     getItems, addSection, renameItem, deleteItem, reorder,
+    updateItemColor, generateSectionTeamColors,
     assignSeats,
     renderList, renderAssignSelect,
     openEditModal, saveEditModal
