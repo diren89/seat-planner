@@ -195,7 +195,7 @@ const Teams = (() => {
           if (t.kind === 'section') {
             underSection = true;
             return `
-            <li class="team-section" draggable="true" data-id="${t.id}">
+            <li class="team-section" draggable="false" data-id="${t.id}">
               <span class="drag-handle" title="Ziehen zum Sortieren">${Icons.get('drag')}</span>
               <button class="section-swatch" data-id="${t.id}" style="background:${t.color || '#93a8b2'};" title="Abschnittsfarbe wählen" aria-label="Abschnittsfarbe wählen"></button>
               <span class="section-name">${escHtml(t.name)}</span>
@@ -212,7 +212,7 @@ const Teams = (() => {
           else if (demand > 0)              { demandCls = ' demand-met'; }
           const cls = 'team-item' + (underSection ? ' under-section' : '') + (hi.has(t.id) ? ' room-team' : '') + (t.id === hlTeam ? ' seats-highlighted' : '');
           return `
-            <li class="${cls}" draggable="true" data-id="${t.id}">
+            <li class="${cls}" draggable="false" data-id="${t.id}">
               <span class="drag-handle" title="Ziehen zum Sortieren">${Icons.get('drag')}</span>
               <span class="team-swatch" style="background:${t.color};"></span>
               <span class="team-name" title="Zugewiesene Plätze markieren">${escHtml(t.name)}</span>

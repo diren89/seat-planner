@@ -822,6 +822,12 @@
 
     // Rename a section divider inline (double-click)
     teamList.addEventListener('dblclick', e => {
+      // Double-click a team row (but not its buttons/handle) → edit modal
+      const teamRow = e.target.closest('.team-item');
+      if (teamRow && !e.target.closest('.team-actions, .drag-handle')) {
+        Teams.openEditModal(teamRow.dataset.id);
+        return;
+      }
       const nameEl = e.target.closest('.section-name');
       if (!nameEl) return;
       const id = nameEl.closest('.team-section').dataset.id;
@@ -846,8 +852,18 @@
       nameEl.addEventListener('keydown', onKey);
     });
 
-    // Drag & drop reordering of teams + sections (delegated; HTML5 native DnD)
+    // Drag & drop reordering of teams + sections (delegated; HTML5 native DnD).
+    // Rows are draggable="false" by default — only the .drag-handle arms it on
+    // mousedown. Without this, native drag-detection on the whole row can
+    // swallow a "click" on the edit/delete buttons if the mouse moves even a
+    // pixel between mousedown/mouseup (common with trackpads), silently
+    // breaking those buttons despite no JS error.
     let _dragId = null;
+    teamList.addEventListener('mousedown', e => {
+      const li = e.target.closest('.team-item, .team-section');
+      if (!li) return;
+      li.draggable = !!e.target.closest('.drag-handle');
+    });
     teamList.addEventListener('dragstart', e => {
       const li = e.target.closest('[data-id]');
       if (!li) return;
@@ -859,6 +875,7 @@
     });
     teamList.addEventListener('dragend', e => {
       _dragId = null;
+      e.target.draggable = false;
       teamList.querySelectorAll('.dragging, .drag-over-before, .drag-over-after')
         .forEach(el => el.classList.remove('dragging', 'drag-over-before', 'drag-over-after'));
     });
