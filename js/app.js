@@ -765,17 +765,23 @@
 
     // Hover preview: lightweight ring on a team's seats, no fade of others.
     // mouseover/mouseout (not mouseenter/leave) since they bubble for delegation.
+    // Only the plan re-renders (Seats.render) — NOT refresh()/Teams.renderList,
+    // which would replace #team-list's innerHTML under the cursor. That
+    // destroyed-and-recreated row triggers a fresh native mouseover on the
+    // new node, calling this handler again — an infinite render loop (~70/s)
+    // that also corrupted real-click hit-testing for anything inside the list
+    // while the mouse rested there (edit/delete/swatch/drag all affected).
     teamList.addEventListener('mouseover', e => {
       const item = e.target.closest('.team-item');
       if (!item || item.contains(e.relatedTarget)) return;
       Seats.setHoverTeam(item.dataset.id);
-      refresh();
+      Seats.render();
     });
     teamList.addEventListener('mouseout', e => {
       const item = e.target.closest('.team-item');
       if (!item || item.contains(e.relatedTarget)) return;
       Seats.setHoverTeam('');
-      refresh();
+      Seats.render();
     });
 
     // Team list events (edit / delete / section-delete / highlight) via delegation
