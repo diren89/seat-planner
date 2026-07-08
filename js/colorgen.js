@@ -67,5 +67,32 @@ const Colorgen = (() => {
 
   const SWATCHES = palette(24);
 
-  return { hexToHsl, hslToHex, palette, SWATCHES };
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  /**
+   * Generate `count` shades of `baseHex` — same hue & saturation, only
+   * lightness steps across a band centered on the base color. Reads as
+   * "one color family, several brightnesses" rather than a rainbow.
+   * Band is clamped to stay readable with the app's fixed dark
+   * seat-label text (free/team-colored seats never switch to white text).
+   */
+  function shades(baseHex, count) {
+    if (count <= 0) return [];
+    const { h, s, l } = hexToHsl(baseHex);
+    const sat = clamp(s, 40, 75);
+    const center = clamp(l, 55, 75);
+    // Cap the band so it always fits inside the readable [50,82] range —
+    // shifting the whole band (not clamping each point) keeps every step
+    // distinct instead of collapsing the low/high end into duplicates.
+    const band = clamp(10 + count * 6, 20, 30);
+    const bandStart = clamp(center - band / 2, 50, 82 - band);
+    const out = [];
+    for (let i = 0; i < count; i++) {
+      const t = count > 1 ? i / (count - 1) : 0.5;   // 0..1 across the band
+      out.push(hslToHex(h, sat, bandStart + t * band));
+    }
+    return out;
+  }
+
+  return { hexToHsl, hslToHex, palette, shades, SWATCHES };
 })();

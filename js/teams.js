@@ -112,8 +112,7 @@ const Teams = (() => {
     const memberIds = arr.slice(from + 1, to).map(t => t.id);
     if (memberIds.length === 0) return 0;
 
-    const baseHue = Colorgen.hexToHsl(arr[from].color).h;
-    const colors = Colorgen.palette(memberIds.length, { baseHue, spread: 100 });
+    const colors = Colorgen.shades(arr[from].color, memberIds.length);
     const colorMap = new Map(memberIds.map((id, i) => [id, colors[i]]));
 
     _setState({ ...state, teams: arr.map(t => colorMap.has(t.id) ? { ...t, color: colorMap.get(t.id) } : t) });
@@ -257,7 +256,8 @@ const Teams = (() => {
     _editingTeamId = id;
     document.getElementById('modal-team-name').value   = team.name;
     document.getElementById('modal-team-color').value  = team.color;
-    document.getElementById('modal-team-color-trigger').style.background = team.color;
+    const trigger = document.getElementById('modal-team-color-trigger');
+    if (trigger) trigger.style.background = team.color;
     document.getElementById('modal-team-demand').value = team.demand || 0;
     document.getElementById('modal-team').style.display = 'flex';
   }
